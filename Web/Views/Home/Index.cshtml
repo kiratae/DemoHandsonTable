@@ -1,0 +1,159 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+
+@Html.ActionLink("Go List", "List")
+
+<br>
+<hr />
+<br>
+
+<div id="app">
+    {{ message }}
+    <hr />
+    <div class="menu">
+        <ul>
+            <li>File</li>
+        </ul>
+    </div>
+    <div class="toolbar">
+        <ul class="flex-contianer">
+            <li v-on:click="undo">Undo</li>
+            <li v-on:click="redo">Redo</li>
+            <li v-on:click="align('htLeft')">Horizontal Align Left</li>
+            <li v-on:click="align('htCenter')">Horizontal Align Center</li>
+            <li v-on:click="align('htRight')">Horizontal Align Right</li>
+            <li v-on:click="align('htJustify')">Horizontal Jusitfy</li>
+            <li v-on:click="align('htTop')">Vertical Align Top</li>
+            <li v-on:click="align('htMiddle')">Vertical Align Middle</li>
+            <li v-on:click="align('htBottom')">Vertical Align Bottom</li>
+        </ul>
+    </div>
+    fx <input type="text" v-model="inputFormula" v-on:keyup.enter="inputFormulaEnter" />
+    <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 420px; overflow: hidden; width: 100%;">
+        <hot-table ref="hotTableComponent" :data="hotData" :settings="hotSettings" :cell="hotCell"></hot-table>
+    </div>
+</div>
+
+@section Head {
+    <link rel="stylesheet" href="~/lib/handsontable/handsontable.full.min.css" />
+
+    <style>
+        .flex-contianer {
+            list-style: none;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+
+        .flex-contianer > li {
+            margin: 0 5px;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+            .flex-contianer > li:hover {
+                color:red;
+                text-decoration: underline;
+            }
+    </style>
+}
+
+@section Scripts {
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    <script src="~/lib/handsontable/handsontable.full.min.js"></script>
+    <script src="~/lib/vue/vue.js"></script>
+    <script src="~/lib/handsontable/vue/dist/vue-handsontable.js"></script>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                message: 'Hello Vue!',
+                hotEl: null,
+                hotData: Handsontable.helper.createSpreadsheetData(1000, 26),
+                hotSettings: {
+                    rowHeaders: true,
+                    colHeaders: true,
+                    contextMenu: true,
+                    dropdownMenu: true,
+                    formulas: true,
+                    colWidths: 100,
+                    width: '100%',
+                    height: 420,
+                    rowHeights: 23,
+                    outsideClickDeselects: false,
+                    manualColumnResize: true,
+                    manualRowResize: true,
+                    licenseKey: 'non-commercial-and-evaluation'
+                },
+                hotCell: [
+                    { row: 0, col: 0, className: "htCenter htMiddle" },
+                ],
+                inputFormula: '',
+                activeCell: {
+                    row: 0, col: 0
+                }
+            },
+            mounted() {
+                this.hotEl = this.$refs.hotTableComponent.hotInstance;
+
+                Handsontable.hooks.add('afterSetCellMeta', this.afterSetCellMeta, this.hotEl);
+                Handsontable.hooks.add('afterSelectionEnd', this.afterSelectionEnd, this.hotEl);
+
+                this.hotEl.selectCell(this.activeCell.row, this.activeCell.col);
+            },
+            methods: {
+                undo() {
+                    this.hotEl.undo();
+                },
+                redo() {
+                    this.hotEl.redo();
+                },
+                align(className, isHorizontal) {
+                    let selectedRanges = this.hotEl.getSelectedRange();
+                    if (!selectedRanges)
+                        return;
+                    console.log(selectedRanges);
+                    for (let selectedRange of selectedRanges) {
+                        for (let row = selectedRange.from.row < 0 ? 0  : selectedRange.from.row; row <= selectedRange.to.row; row++) {
+                            for (let col = selectedRange.from.col < 0 ? 0 : selectedRange.from.col; col <= selectedRange.to.col; col++) {
+                                console.log(this.hotEl.getCellMeta(row, col).className);
+                                this.hotEl.setCellMeta(row, col, 'className', className);
+                            }
+                        }
+                    }
+                    this.hotEl.render();
+                },
+                afterSetCellMeta(row, col, key, val) {
+                    //console.log("cell meta changed", row, col, key, val);
+                },
+                afterSelectionEnd(row, col, row2, col2, selectionLayerLevel) {
+                    console.log("afterSelectionEnd", row, col, row2, col2, selectionLayerLevel);
+                    this.activeCell.row = row;
+                    this.activeCell.col = col;
+                    this.inputFormula = this.hotEl.getDataAtCell(row, col);
+                },
+                inputFormulaEnter(event) {
+                    console.log(event);
+                    $(event.target).blur();
+                }
+            },
+            watch: {
+                inputFormula: function (nv, ov) {
+                    this.hotEl.hasComputedCellValue
+                    this.hotEl.setDataAtCell(this.activeCell.row, this.activeCell.col, nv, 'user input');
+                }
+            },
+            components: {
+                HotTable: Handsontable.vue.HotTable
+            },
+        })
+    </script>
+}

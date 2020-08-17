@@ -1,0 +1,12 @@
+﻿@model BaseListModel<ListProductModel>
+
+@{
+    Layout = "_ListLayout";
+}
+
+<ul>
+    @foreach (var item in Model.PageModel.Products)
+    {
+        <li>@item.ProductId @item.Name @item.Price</li>
+    }
+</ul>

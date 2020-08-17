@@ -1,0 +1,10 @@
+﻿@model BaseListModel
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = Model.Title;
+}
+
+<h1>@ViewData["Title"]</h1>
+
+@RenderBody()
