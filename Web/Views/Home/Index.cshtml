@@ -1,48 +1,66 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Hansontable Demo";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
-
-
-@Html.ActionLink("Handsontable", "Index")&emsp;|&emsp;@Html.ActionLink("jExcel", "Index1")
-
-<hr />
-
-<h1>Handsontable</h1>
-
 <div id="app">
-    {{ message }}
+    <h1>{{ message }}</h1>
     <hr />
-    <div class="toolbar">
-        <ul class="flex-contianer">
-            <li v-on:click="undo">Undo</li>
-            <li v-on:click="redo">Redo</li>
-            <li v-on:click="align('htLeft')">Horizontal Align Left</li>
-            <li v-on:click="align('htCenter')">Horizontal Align Center</li>
-            <li v-on:click="align('htRight')">Horizontal Align Right</li>
-            <li v-on:click="align('htJustify')">Horizontal Jusitfy</li>
-            <li v-on:click="align('htTop')">Vertical Align Top</li>
-            <li v-on:click="align('htMiddle')">Vertical Align Middle</li>
-            <li v-on:click="align('htBottom')">Vertical Align Bottom</li>
-        </ul>
-    </div>
-    <div class="form-row mb-2">
+    <div class="form-row mb-3">
         <label class="col-form-label col-auto">fx</label>
         <div class="col">
             <input type="text" v-model="inputFormula" class="form-control" v-on:keyup.enter="inputFormulaEnter" />
         </div>
     </div>
-    <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 420px; overflow: hidden; width: 100%;">
-        <hot-table ref="hotTableComponent" :data="hotData" :settings="hotSettings" :cell="hotCell"></hot-table>
+    <ul class="nav nav-tabs border-bottom-0" id="myTab">
+        <li class="nav-item">
+            <a class="nav-link" v-bind:class="{ active : isFormTab }" href="javascript:void(0)" v-on:click="changeTab('form')">Form</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" v-bind:class="{ active : !isFormTab }" href="javascript:void(0)" v-on:click="changeTab('cell-data')">Cell Data</a>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+
+                    <div class="row">
+                        <div v-bind:class="isFormTab ? 'col-12' : 'col-10'">
+                            <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 420px; overflow: hidden; width: 100%;">
+                                <hot-table ref="wrapper" :settings="hotSettings">
+                                    <hot-column  v-for="n in 15" v-bind:key="'col' + n">
+                                        <custom-renderer hot-renderer></custom-renderer>
+                                    </hot-column>
+                                </hot-table>
+                            </div>
+                        </div>
+                        <div v-bind:class="isFormTab ? 'd-none' : 'col-2'">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <ul class="list-group" id="variables">
+                                        <li class="list-group-item" v-for="item in variables">{{ item.tag }}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </div>
+
+    <div id="vuex-preview">
+        <table>
+        </table>
+    </div>
+
+
 </div>
 
 @section Head {
-    <link rel="stylesheet" href="~/lib/handsontable/handsontable.full.min.css" />
+    <link rel="stylesheet" href="~/lib/handsontable/handsontable.full.css" />
+    <link rel="stylesheet" href="~/lib/dragula/dragula.css" />
 
     <style>
         .flex-contianer {
@@ -66,32 +84,75 @@
 }
 
 @section Scripts {
-    <script src="~/lib/jquery/jquery.min.js"></script>
-    <script src="~/lib/handsontable/handsontable.full.min.js"></script>
+    <script src="~/lib/jquery/jquery.js"></script>
+    <script src="~/lib/handsontable/handsontable.full.js"></script>
     <script src="~/lib/vue/vue.js"></script>
+    <script src="~/lib/vuex/vuex.js"></script>
     <script src="~/lib/handsontable/vue/dist/vue-handsontable.js"></script>
+    <script src="~/lib/dragula/dragula.js"></script>
+
+    <script>
+        const CustomRenderer = {
+            template: '<div><i style="color: #a9a9a9">Row: {{row}}, column: {{col}},</i> value: {{value}}</div>',
+            data: function () {
+                return {
+                    // We'll need to define properties in our data object,
+                    // corresponding to all of the data being injected from
+                    // the BaseEditorComponent class, which are:
+                    // - hotInstance (instance of Handsontable)
+                    // - row (row index)
+                    // - col (column index)
+                    // - prop (column property name)
+                    // - TD (the HTML cell element)
+                    // - cellProperties (the cellProperties object for the edited cell)
+                    hotInstance: null,
+                    TD: null,
+                    row: null,
+                    col: null,
+                    prop: null,
+                    value: null,
+                    cellProperties: null
+                }
+            },
+            watch: {
+                value: function (nv, ov) {
+                    console.log("value", nv, this.cellProperties);
+                }
+            }
+        };
+    </script>
 
     <script>
         var app = new Vue({
             el: '#app',
             data: {
                 message: 'Hansontable!',
-                hotEl: null,
-                hotData: sheetHelper(1000, 26),
+                hotRef: null,
+                hotData: Handsontable.helper.createSpreadsheetData(10, 10),
+                hotDataCellData: [],
                 hotSettings: {
+                    startRows: 15,
+                    startCols: 15,
                     rowHeaders: true,
                     colHeaders: true,
                     contextMenu: true,
                     dropdownMenu: true,
                     formulas: true,
-                    colWidths: 100,
+                    mergeCells: true,
+                    //colWidths: 100,
                     width: '100%',
                     height: 420,
-                    rowHeights: 23,
+                    //rowHeights: 23,
                     outsideClickDeselects: false,
                     manualColumnResize: true,
                     manualRowResize: true,
-                    licenseKey: 'non-commercial-and-evaluation'
+                    contextMenu: ['row_above', 'row_below', 'col_left', 'col_right', '---------', 'remove_row', 'remove_col', 'clear_column', 'alignment', 'mergeCells'],
+                    licenseKey: 'non-commercial-and-evaluation',
+                    afterChange: () => {
+                        if (this.hotRef) {
+                            this.$store.commit('updateData', this.hotRef.getSourceData());
+                        }
+                    }
                 },
                 hotCell: [
                     //{ row: 0, col: 0, className: "htCenter htMiddle" },
@@ -99,37 +160,85 @@
                 inputFormula: '',
                 activeCell: {
                     row: 0, col: 0
-                }
+                },
+                dragEl: null,
+                variables: [
+                    { id: 1, tag: '!A' },
+                    { id: 2, tag: '!B' },
+                    { id: 3, tag: '!C' },
+                    { id: 4, tag: '!D' },
+                ],
+                isFormTab: true
             },
             mounted() {
-                this.hotEl = this.$refs.hotTableComponent.hotInstance;
+                this.hotRef = this.$refs.wrapper.hotInstance;
+                this.$store.subscribe((mutation, state) => {
+                    this.updateVuexPreview();
+                });
+                this.$store.commit('updateData', this.hotRef.getSourceData());
 
-                Handsontable.hooks.add('afterSetCellMeta', this.afterSetCellMeta, this.hotEl);
-                Handsontable.hooks.add('afterSelectionEnd', this.afterSelectionEnd, this.hotEl);
+                this.initHotForm();
 
-                this.hotEl.selectCell(this.activeCell.row, this.activeCell.col);
+                this.initDragula();
             },
             methods: {
-                undo() {
-                    this.hotEl.undo();
+                initHotForm() {
+                    //this.hotEl = this.$refs.hotTableComponent.hotInstance;
+                    //Handsontable.hooks.add('afterSetCellMeta', this.afterSetCellMeta, this.hotEl);
+                    Handsontable.hooks.add('afterBeginEditing', this.afterBeginEditing, this.hotRef);
+                    //Handsontable.hooks.add('afterChange', this.afterChange, this.hotRef);
+                    Handsontable.hooks.add('afterSelectionEnd', this.afterSelectionEnd, this.hotRef);
+                    Handsontable.hooks.add('beforeKeyDown', this.beforeKeyDown, this.hotRef);
+                    Handsontable.hooks.add('afterSetDataAtCell', this.afterSetDataAtCell, this.hotRef);
+
+                    this.hotRef.selectCell(this.activeCell.row, this.activeCell.col);
                 },
-                redo() {
-                    this.hotEl.redo();
+                initDragula() {
+                    this.dragEl = dragula([document.querySelector('#variables')]).on('drag', function (el) {
+                        //alert('drag!');
+                    }).on('drop', function (el) {
+                        //console.log('drop', el);
+                        //$(el).remove();
+                    });
                 },
-                align(className, isHorizontal) {
-                    let selectedRanges = this.hotEl.getSelectedRange();
-                    if (!selectedRanges)
-                        return;
-                    console.log(selectedRanges);
-                    for (let selectedRange of selectedRanges) {
-                        for (let row = selectedRange.from.row < 0 ? 0 : selectedRange.from.row; row <= selectedRange.to.row; row++) {
-                            for (let col = selectedRange.from.col < 0 ? 0 : selectedRange.from.col; col <= selectedRange.to.col; col++) {
-                                console.log(this.hotEl.getCellMeta(row, col).className);
-                                this.hotEl.setCellMeta(row, col, 'className', className);
+                updateVuexPreview() {
+                    // This method serves only as a renderer for the Vuex's state dump.
+
+                    const previewTable = document.querySelector('#vuex-preview table');
+                    let newInnerHtml = '<tbody>';
+
+                    for (const [key, value] of Object.entries(this.$store.state)) {
+                        newInnerHtml += `<tr><td class="table-container">`;
+
+                        if (key === 'hotData' && Array.isArray(value)) {
+                            newInnerHtml += `<strong>hotData:</strong> <br><table><tbody>`;
+
+                            for (let row of value) {
+                                newInnerHtml += `<tr>`;
+
+                                for (let cell of row) {
+                                    newInnerHtml += `<td>${cell}</td>`;
+                                }
+
+                                newInnerHtml += `</tr>`;
                             }
+                            newInnerHtml += `</tbody></table>`;
+
+                        } else if (key === 'hotSettings') {
+                            newInnerHtml += `<strong>hotSettings:</strong> <ul>`;
+
+                            for (let settingsKey of Object.keys(value)) {
+                                newInnerHtml += `<li>${settingsKey}: ${this.$store.state.hotSettings[settingsKey]}</li>`;
+                            }
+
+                            newInnerHtml += `</ul>`;
                         }
+
+                        newInnerHtml += `</td></tr>`;
                     }
-                    this.hotEl.render();
+                    newInnerHtml += `</tbody>`;
+
+                    previewTable.innerHTML = newInnerHtml;
                 },
                 afterSetCellMeta(row, col, key, val) {
                     //console.log("cell meta changed", row, col, key, val);
@@ -138,23 +247,82 @@
                     console.log("afterSelectionEnd", row, col, row2, col2, selectionLayerLevel);
                     this.activeCell.row = row;
                     this.activeCell.col = col;
-                    //this.inputFormula = this.hotEl.getDataAtCell(row, col);
-                    this.inputFormula = this.hotEl.getValue();
+                    //console.log('getCellMeta', this.hotRef.getCellMeta(row, col));
+                    //console.log('getCopyableData', this.hotRef.getCopyableData(row, col));
+                    //console.log('getCellEditor', this.hotRef.getCellEditor(row, col));
+                    //console.log('getSourceDataAtCell', this.hotRef.getSourceDataAtCell(row, col));
+                    //console.log('getActiveEditor', this.hotRef.getActiveEditor(row, col));
+                    //this.inputFormula = this.hotRef.getDataAtCell(row, col);
+                    this.inputFormula = this.hotRef.getSourceDataAtCell(row, col);
+                    this.$store.commit('updateData', this.hotRef.getSourceData());
+                },
+                afterChange(changes, source) {
+                    // [[row, prop, oldVal, newVal], ...]
+                    console.log("afterChange", changes, source);
+                    for (let change of changes) {
+                        if (change[0] == this.activeCell.row && change[1] == this.activeCell.col) {
+                            //this.inputFormula = change[3];
+                        }
+                    }
+                    //this.activeCell.row = row;
+                    //this.activeCell.col = col;
+                    ////this.inputFormula = this.hotEl.getDataAtCell(row, col);
+                    //this.inputFormula = this.hotEl.getValue();
+                },
+                afterBeginEditing(row, col) {
+                    console.log("afterBeginEditing", row, col);
+                    this.inputFormula = this.hotRef.getSourceDataAtCell(row, col);
+                    this.$store.commit('updateData', this.hotRef.getSourceData());
+                },
+                beforeKeyDown(event) {
+                    //console.log('beforeKeyDown', event);
                 },
                 inputFormulaEnter(event) {
-                    console.log(event);
+                    //console.log(event);
                     $(event.target).blur();
+                },
+                afterSetDataAtCell(changes, source) {
+                    console.log('afterSetDataAtCell', changes);
+                },
+                changeTab(tab) {
+                    if (tab == 'form') {
+                        this.hotRef.selectCell(this.activeCell.row, this.activeCell.col);
+                    } else if (tab == 'cell-data') {
+                        const self = this;
+                        this.hotDataCellData = Object.assign([], this.hotData);
+                        this.hotRef.selectCell(this.activeCell.row, this.activeCell.col);
+                        this.isFormTab = false;
+                    }
                 }
             },
             watch: {
-                //inputFormula: function (nv, ov) {
-                //    this.hotEl.hasComputedCellValue
-                //    this.hotEl.setDataAtCell(this.activeCell.row, this.activeCell.col, nv, 'user input');
-                //}
+                inputFormula: function (nv, ov) {
+                    this.hotRef.hasComputedCellValue
+                    this.hotRef.setDataAtCell(this.activeCell.row, this.activeCell.col, nv, 'user input');
+                    this.$store.commit('updateData', this.hotRef.getSourceData());
+                }
             },
             components: {
-                HotTable: Handsontable.vue.HotTable
+                HotTable: Handsontable.vue.HotTable,
+                HotColumn: Handsontable.vue.HotColumn,
+                CustomRenderer
             },
+            store: new Vuex.Store({
+                state: {
+                    hotData: null,
+                    hotSettings: {
+                        readOnly: false
+                    }
+                },
+                mutations: {
+                    updateData(state, hotData) {
+                        state.hotData = hotData;
+                    },
+                    updateSettings(state, updateObj) {
+                        state.hotSettings[updateObj.prop] = updateObj.value;
+                    }
+                }
+            })
         })
     </script>
 }

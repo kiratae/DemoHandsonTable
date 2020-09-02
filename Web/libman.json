@@ -18,6 +18,14 @@
       "provider": "jsdelivr",
       "library": "@handsontable/vue@5.0.1",
       "destination": "wwwroot/lib/handsontable/vue/"
+    },
+    {
+      "library": "dragula@3.7.2",
+      "destination": "wwwroot/lib/dragula/"
+    },
+    {
+      "library": "vuex@3.5.1",
+      "destination": "wwwroot/lib/vuex/"
     }
   ]
 }
