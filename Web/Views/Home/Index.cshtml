@@ -5,20 +5,21 @@
 <div id="app">
     <h1>{{ message }}</h1>
     <hr />
+
     <div class="form-row mb-3">
         <label class="col-form-label col-auto">fx</label>
         <div class="col">
             <input type="text" v-model="inputFormula" class="form-control" v-on:keyup.enter="inputFormulaEnter" />
         </div>
     </div>
-    <ul class="nav nav-tabs border-bottom-0" id="myTab">
-        <li class="nav-item">
-            <a class="nav-link" v-bind:class="{ active : isFormTab }" href="javascript:void(0)" v-on:click="changeTab('form')">Form</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" v-bind:class="{ active : !isFormTab }" href="javascript:void(0)" v-on:click="changeTab('cell-data')">Cell Data</a>
-        </li>
-    </ul>
+    @*<ul class="nav nav-tabs border-bottom-0" id="myTab">
+            <li class="nav-item">
+                <a class="nav-link" v-bind:class="{ active : isFormTab }" href="javascript:void(0)" v-on:click="changeTab('form')">Form</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" v-bind:class="{ active : !isFormTab }" href="javascript:void(0)" v-on:click="changeTab('cell-data')">Cell Data</a>
+            </li>
+        </ul>*@
     <div class="tab-content">
         <div class="tab-pane fade show active" role="tabpanel">
             <div class="card">
@@ -28,9 +29,9 @@
                         <div v-bind:class="isFormTab ? 'col-12' : 'col-10'">
                             <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 420px; overflow: hidden; width: 100%;">
                                 <hot-table ref="wrapper" :settings="hotSettings">
-                                    <hot-column  v-for="n in 15" v-bind:key="'col' + n">
-                                        <custom-renderer hot-renderer></custom-renderer>
-                                    </hot-column>
+                                    @*<hot-column  v-for="n in 15" v-bind:key="'col' + n">
+                                            <custom-renderer hot-renderer></custom-renderer>
+                                        </hot-column>*@
                                 </hot-table>
                             </div>
                         </div>
@@ -50,11 +51,7 @@
         </div>
     </div>
 
-    <div id="vuex-preview">
-        <table>
-        </table>
-    </div>
-
+    <button class="btn btn-primary btn-block mt-3" type="button" v-on:click="getDatas">getDatas to console log</button>
 
 </div>
 
@@ -87,13 +84,30 @@
     <script src="~/lib/jquery/jquery.js"></script>
     <script src="~/lib/handsontable/handsontable.full.js"></script>
     <script src="~/lib/vue/vue.js"></script>
-    <script src="~/lib/vuex/vuex.js"></script>
     <script src="~/lib/handsontable/vue/dist/vue-handsontable.js"></script>
     <script src="~/lib/dragula/dragula.js"></script>
 
     <script>
+        class CustomEditor extends Handsontable.editors.TextEditor {
+            constructor(props) {
+                super(props);
+            }
+
+            createElements() {
+                super.createElements();
+
+                this.TEXTAREA = document.createElement('input');
+                //this.TEXTAREA.setAttribute('placeholder', 'Custom placeholder');
+                this.TEXTAREA.setAttribute('class', 'cus-hot-input');
+                this.TEXTAREA.setAttribute('data-hot-input', true);
+                this.textareaStyle = this.TEXTAREA.style;
+                Handsontable.dom.empty(this.TEXTAREA_PARENT);
+                this.TEXTAREA_PARENT.appendChild(this.TEXTAREA);
+            }
+        }
+
         const CustomRenderer = {
-            template: '<div><i style="color: #a9a9a9">Row: {{row}}, column: {{col}},</i> value: {{value}}</div>',
+            template: '<div>{{value}}</div>',
             data: function () {
                 return {
                     // We'll need to define properties in our data object,
@@ -120,6 +134,30 @@
                 }
             }
         };
+
+        $(document).on('keyup', '.cus-hot-input', function (event) {
+            var keycode = event.keyCode;
+
+            if (keycode == 8) { // backspace
+                if (app.inputFormula != null) {
+                    app.inputFormula = app.inputFormula.slice(0, app.inputFormula.length - 1);
+                }
+            }
+
+            var valid =
+                (keycode > 47 && keycode < 58) || // number keys
+                keycode == 32 || // spacebar (if you want to allow carriage returns)
+                (keycode > 64 && keycode < 91) || // letter keys
+                (keycode > 95 && keycode < 112) || // numpad keys
+                (keycode > 185 && keycode < 193) || // ;=,-./` (in order)
+                (keycode > 218 && keycode < 223);   // [\]' (in order)
+            if (!valid)
+                return;
+            if (app.inputFormula == null)
+                app.inputFormula = '';
+            app.isSuspense = true;
+            app.inputFormula += event.key;
+        });
     </script>
 
     <script>
@@ -128,8 +166,8 @@
             data: {
                 message: 'Hansontable!',
                 hotRef: null,
-                hotData: Handsontable.helper.createSpreadsheetData(10, 10),
-                hotDataCellData: [],
+                //hotData: Handsontable.helper.createSpreadsheetData(10, 10),
+                //hotDataCellData: [],
                 hotSettings: {
                     startRows: 15,
                     startCols: 15,
@@ -146,13 +184,48 @@
                     outsideClickDeselects: false,
                     manualColumnResize: true,
                     manualRowResize: true,
+                    editor: CustomEditor,
+                    //columns: [
+                    //    {
+                    //        type: 'autocomplete',
+                    //        source: ['Audi', 'BMW', 'Chrysler', 'Citroen', 'Mercedes', 'Nissan', 'Opel', 'Suzuki', 'Toyota', 'Volvo'],
+                    //        strict: false
+                    //    },
+                    //    {
+                    //        // 2nd cell is simple text, no special options here
+                    //        editor: CustomEditor
+                    //    },
+                    //    {
+                    //        type: 'date',
+                    //        dateFormat: 'MM/DD/YYYY',
+                    //        correctFormat: true,
+                    //        defaultDate: new Date(),
+                    //        // datePicker additional options (see https://github.com/dbushell/Pikaday#configuration)
+                    //        datePickerConfig: {
+                    //            // First day of the week (0: Sunday, 1: Monday, etc)
+                    //            firstDay: 0,
+                    //            showWeekNumber: true,
+                    //            //numberOfMonths: 3,
+                    //            disableDayFn: function (date) {
+                    //                // Disable Sunday and Saturday
+                    //                return date.getDay() === 0 || date.getDay() === 6;
+                    //            }
+                    //        }
+                    //    },
+                    //    {
+                    //        type: 'numeric',
+                    //        numericFormat: {
+                    //            pattern: '$ 0,0.00'
+                    //        }
+                    //    }
+                    //],
                     contextMenu: ['row_above', 'row_below', 'col_left', 'col_right', '---------', 'remove_row', 'remove_col', 'clear_column', 'alignment', 'mergeCells'],
                     licenseKey: 'non-commercial-and-evaluation',
-                    afterChange: () => {
-                        if (this.hotRef) {
-                            this.$store.commit('updateData', this.hotRef.getSourceData());
-                        }
-                    }
+                    //afterChange: () => {
+                    //    if (this.hotRef) {
+                    //        this.$store.commit('updateData', this.hotRef.getSourceData());
+                    //    }
+                    //}
                 },
                 hotCell: [
                     //{ row: 0, col: 0, className: "htCenter htMiddle" },
@@ -168,27 +241,22 @@
                     { id: 3, tag: '!C' },
                     { id: 4, tag: '!D' },
                 ],
-                isFormTab: true
+                isFormTab: true,
+                isEditorOpen: false,
+                isSuspense: false
             },
             mounted() {
-                this.hotRef = this.$refs.wrapper.hotInstance;
-                this.$store.subscribe((mutation, state) => {
-                    this.updateVuexPreview();
-                });
-                this.$store.commit('updateData', this.hotRef.getSourceData());
-
                 this.initHotForm();
 
                 this.initDragula();
             },
             methods: {
                 initHotForm() {
-                    //this.hotEl = this.$refs.hotTableComponent.hotInstance;
+                    this.hotRef = this.$refs.wrapper.hotInstance;
                     //Handsontable.hooks.add('afterSetCellMeta', this.afterSetCellMeta, this.hotEl);
                     Handsontable.hooks.add('afterBeginEditing', this.afterBeginEditing, this.hotRef);
-                    //Handsontable.hooks.add('afterChange', this.afterChange, this.hotRef);
-                    Handsontable.hooks.add('afterSelectionEnd', this.afterSelectionEnd, this.hotRef);
-                    Handsontable.hooks.add('beforeKeyDown', this.beforeKeyDown, this.hotRef);
+                    ////Handsontable.hooks.add('afterChange', this.afterChange, this.hotRef);
+                    Handsontable.hooks.add('afterSelection', this.afterSelection, this.hotRef);
                     Handsontable.hooks.add('afterSetDataAtCell', this.afterSetDataAtCell, this.hotRef);
 
                     this.hotRef.selectCell(this.activeCell.row, this.activeCell.col);
@@ -201,88 +269,54 @@
                         //$(el).remove();
                     });
                 },
-                updateVuexPreview() {
-                    // This method serves only as a renderer for the Vuex's state dump.
-
-                    const previewTable = document.querySelector('#vuex-preview table');
-                    let newInnerHtml = '<tbody>';
-
-                    for (const [key, value] of Object.entries(this.$store.state)) {
-                        newInnerHtml += `<tr><td class="table-container">`;
-
-                        if (key === 'hotData' && Array.isArray(value)) {
-                            newInnerHtml += `<strong>hotData:</strong> <br><table><tbody>`;
-
-                            for (let row of value) {
-                                newInnerHtml += `<tr>`;
-
-                                for (let cell of row) {
-                                    newInnerHtml += `<td>${cell}</td>`;
-                                }
-
-                                newInnerHtml += `</tr>`;
-                            }
-                            newInnerHtml += `</tbody></table>`;
-
-                        } else if (key === 'hotSettings') {
-                            newInnerHtml += `<strong>hotSettings:</strong> <ul>`;
-
-                            for (let settingsKey of Object.keys(value)) {
-                                newInnerHtml += `<li>${settingsKey}: ${this.$store.state.hotSettings[settingsKey]}</li>`;
-                            }
-
-                            newInnerHtml += `</ul>`;
-                        }
-
-                        newInnerHtml += `</td></tr>`;
-                    }
-                    newInnerHtml += `</tbody>`;
-
-                    previewTable.innerHTML = newInnerHtml;
-                },
                 afterSetCellMeta(row, col, key, val) {
                     //console.log("cell meta changed", row, col, key, val);
                 },
-                afterSelectionEnd(row, col, row2, col2, selectionLayerLevel) {
-                    console.log("afterSelectionEnd", row, col, row2, col2, selectionLayerLevel);
+                afterSelection(row, col, row2, col2, selectionLayerLevel) {
                     this.activeCell.row = row;
                     this.activeCell.col = col;
-                    //console.log('getCellMeta', this.hotRef.getCellMeta(row, col));
-                    //console.log('getCopyableData', this.hotRef.getCopyableData(row, col));
-                    //console.log('getCellEditor', this.hotRef.getCellEditor(row, col));
-                    //console.log('getSourceDataAtCell', this.hotRef.getSourceDataAtCell(row, col));
-                    //console.log('getActiveEditor', this.hotRef.getActiveEditor(row, col));
-                    //this.inputFormula = this.hotRef.getDataAtCell(row, col);
+                    //console.log(`afterSelection -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
                     this.inputFormula = this.hotRef.getSourceDataAtCell(row, col);
-                    this.$store.commit('updateData', this.hotRef.getSourceData());
+                    this.isEditorOpen = true;
                 },
                 afterChange(changes, source) {
                     // [[row, prop, oldVal, newVal], ...]
-                    console.log("afterChange", changes, source);
-                    for (let change of changes) {
-                        if (change[0] == this.activeCell.row && change[1] == this.activeCell.col) {
-                            //this.inputFormula = change[3];
-                        }
-                    }
+                    //console.log("afterChange", changes, source);
+                    //for (let change of changes) {
+                    //    if (change[0] == this.activeCell.row && change[1] == this.activeCell.col) {
+                    //        //this.inputFormula = change[3];
+                    //    }
+                    //}
                     //this.activeCell.row = row;
                     //this.activeCell.col = col;
                     ////this.inputFormula = this.hotEl.getDataAtCell(row, col);
                     //this.inputFormula = this.hotEl.getValue();
                 },
                 afterBeginEditing(row, col) {
-                    console.log("afterBeginEditing", row, col);
+                    //console.log("afterBeginEditing", row, col);
+                    this.activeCell.row = row;
+                    this.activeCell.col = col;
+                    //console.log(`afterBeginEditing -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
                     this.inputFormula = this.hotRef.getSourceDataAtCell(row, col);
-                    this.$store.commit('updateData', this.hotRef.getSourceData());
-                },
-                beforeKeyDown(event) {
-                    //console.log('beforeKeyDown', event);
+                    this.isEditorOpen = true;
                 },
                 inputFormulaEnter(event) {
                     //console.log(event);
                     $(event.target).blur();
+                    this.isEditorOpen = false;
+                    this.isSuspense = false;
+                    //console.log(`inputFormulaEnter -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
+                    this.hotRef.setDataAtCell(this.activeCell.row, this.activeCell.col, this.inputFormula, 'user input enter!');
+
+                    // if move select down
+                    this.hotRef.selectCell(++this.activeCell.row, this.activeCell.col);
+
+                    this.$nextTick(function () {
+                        this.inputFormula = '';
+                    });
                 },
                 afterSetDataAtCell(changes, source) {
-                    console.log('afterSetDataAtCell', changes);
+                    //console.log('afterSetDataAtCell', changes);
                 },
                 changeTab(tab) {
                     if (tab == 'form') {
@@ -293,36 +327,25 @@
                         this.hotRef.selectCell(this.activeCell.row, this.activeCell.col);
                         this.isFormTab = false;
                     }
+                },
+                getDatas() {
+                    console.log(this.hotRef.getSourceData());
                 }
             },
             watch: {
                 inputFormula: function (nv, ov) {
-                    this.hotRef.hasComputedCellValue
+                    if (nv == '' || this.hotRef.isEmptyRow(this.activeCell.row) || this.hotRef.isEmptyCol(this.activeCell.col) || !this.isSuspense) {
+                        this.isEditorOpen = false;
+                        return;
+                    }
+                    //console.log(`inputFormula -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
                     this.hotRef.setDataAtCell(this.activeCell.row, this.activeCell.col, nv, 'user input');
-                    this.$store.commit('updateData', this.hotRef.getSourceData());
                 }
             },
             components: {
                 HotTable: Handsontable.vue.HotTable,
-                HotColumn: Handsontable.vue.HotColumn,
-                CustomRenderer
+                HotColumn: Handsontable.vue.HotColumn
             },
-            store: new Vuex.Store({
-                state: {
-                    hotData: null,
-                    hotSettings: {
-                        readOnly: false
-                    }
-                },
-                mutations: {
-                    updateData(state, hotData) {
-                        state.hotData = hotData;
-                    },
-                    updateSettings(state, updateObj) {
-                        state.hotSettings[updateObj.prop] = updateObj.value;
-                    }
-                }
-            })
         })
     </script>
 }
