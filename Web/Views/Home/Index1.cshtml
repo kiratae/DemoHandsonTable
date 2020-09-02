@@ -1,0 +1,53 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+@Html.ActionLink("Handsontable", "Index")&emsp;|&emsp;@Html.ActionLink("jExcel", "Index1")
+
+<hr />
+
+<h1>jExcel</h1>
+
+<div class="w-100">
+    <div id="app"></div>
+</div>
+
+@section Head {
+    <link rel="stylesheet" href="https://bossanova.uk/jexcel/v4/jexcel.css" type="text/css" />
+    <link rel="stylesheet" href="https://bossanova.uk/jsuites/v3/jsuites.css" type="text/css" />
+}
+
+@section Scripts {
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    <script src="~/lib/vue/vue.js"></script>
+    <script src="https://bossanova.uk/jexcel/v4/jexcel.js"></script>
+    <script src="https://bossanova.uk/jsuites/v3/jsuites.js"></script>
+
+    <script>
+        var options = {
+            data: [[]],
+            minDimensions: [26, 1000],
+            defaultColWidth: 100,
+            parseFormulas: true,
+            rowResize: true,
+            columnResize: true,
+            columnSorting: true,
+            tableOverflow: true,
+            tableHeight: '420px',
+            tableWidth: '100%',
+        }
+
+        var app = new Vue({
+            el: '#app',
+            mounted() {
+                let spreadsheet = jexcel(this.$el, options);
+                Object.assign(this, spreadsheet);
+            }
+        })
+    </script>
+}

@@ -8,20 +8,15 @@
 </div>
 
 
-@Html.ActionLink("Go List", "List")
+@Html.ActionLink("Handsontable", "Index")&emsp;|&emsp;@Html.ActionLink("jExcel", "Index1")
 
-<br>
 <hr />
-<br>
+
+<h1>Handsontable</h1>
 
 <div id="app">
     {{ message }}
     <hr />
-    <div class="menu">
-        <ul>
-            <li>File</li>
-        </ul>
-    </div>
     <div class="toolbar">
         <ul class="flex-contianer">
             <li v-on:click="undo">Undo</li>
@@ -35,7 +30,12 @@
             <li v-on:click="align('htBottom')">Vertical Align Bottom</li>
         </ul>
     </div>
-    fx <input type="text" v-model="inputFormula" v-on:keyup.enter="inputFormulaEnter" />
+    <div class="form-row mb-2">
+        <label class="col-form-label col-auto">fx</label>
+        <div class="col">
+            <input type="text" v-model="inputFormula" class="form-control" v-on:keyup.enter="inputFormulaEnter" />
+        </div>
+    </div>
     <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 420px; overflow: hidden; width: 100%;">
         <hot-table ref="hotTableComponent" :data="hotData" :settings="hotSettings" :cell="hotCell"></hot-table>
     </div>
@@ -52,16 +52,16 @@
             flex-wrap: wrap;
         }
 
-        .flex-contianer > li {
-            margin: 0 5px;
-            padding: 5px;
-            cursor: pointer;
-        }
-
-            .flex-contianer > li:hover {
-                color:red;
-                text-decoration: underline;
+            .flex-contianer > li {
+                margin: 0 5px;
+                padding: 5px;
+                cursor: pointer;
             }
+
+                .flex-contianer > li:hover {
+                    color: red;
+                    text-decoration: underline;
+                }
     </style>
 }
 
@@ -75,9 +75,9 @@
         var app = new Vue({
             el: '#app',
             data: {
-                message: 'Hello Vue!',
+                message: 'Hansontable!',
                 hotEl: null,
-                hotData: Handsontable.helper.createSpreadsheetData(1000, 26),
+                hotData: sheetHelper(1000, 26),
                 hotSettings: {
                     rowHeaders: true,
                     colHeaders: true,
@@ -94,7 +94,7 @@
                     licenseKey: 'non-commercial-and-evaluation'
                 },
                 hotCell: [
-                    { row: 0, col: 0, className: "htCenter htMiddle" },
+                    //{ row: 0, col: 0, className: "htCenter htMiddle" },
                 ],
                 inputFormula: '',
                 activeCell: {
@@ -122,7 +122,7 @@
                         return;
                     console.log(selectedRanges);
                     for (let selectedRange of selectedRanges) {
-                        for (let row = selectedRange.from.row < 0 ? 0  : selectedRange.from.row; row <= selectedRange.to.row; row++) {
+                        for (let row = selectedRange.from.row < 0 ? 0 : selectedRange.from.row; row <= selectedRange.to.row; row++) {
                             for (let col = selectedRange.from.col < 0 ? 0 : selectedRange.from.col; col <= selectedRange.to.col; col++) {
                                 console.log(this.hotEl.getCellMeta(row, col).className);
                                 this.hotEl.setCellMeta(row, col, 'className', className);
@@ -138,7 +138,8 @@
                     console.log("afterSelectionEnd", row, col, row2, col2, selectionLayerLevel);
                     this.activeCell.row = row;
                     this.activeCell.col = col;
-                    this.inputFormula = this.hotEl.getDataAtCell(row, col);
+                    //this.inputFormula = this.hotEl.getDataAtCell(row, col);
+                    this.inputFormula = this.hotEl.getValue();
                 },
                 inputFormulaEnter(event) {
                     console.log(event);
@@ -146,10 +147,10 @@
                 }
             },
             watch: {
-                inputFormula: function (nv, ov) {
-                    this.hotEl.hasComputedCellValue
-                    this.hotEl.setDataAtCell(this.activeCell.row, this.activeCell.col, nv, 'user input');
-                }
+                //inputFormula: function (nv, ov) {
+                //    this.hotEl.hasComputedCellValue
+                //    this.hotEl.setDataAtCell(this.activeCell.row, this.activeCell.col, nv, 'user input');
+                //}
             },
             components: {
                 HotTable: Handsontable.vue.HotTable
