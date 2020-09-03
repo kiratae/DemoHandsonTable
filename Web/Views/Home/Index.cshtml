@@ -29,8 +29,9 @@
                         <div v-bind:class="isFormTab ? 'col-12' : 'col-10'">
                             <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 420px; overflow: hidden; width: 100%;">
                                 <hot-table ref="wrapper" :settings="hotSettings">
-                                    @*<hot-column  v-for="n in 15" v-bind:key="'col' + n">
+                                    @*<hot-column v-for="n in 15" v-bind:key="'col' + n">
                                             <custom-renderer hot-renderer></custom-renderer>
+                                            <custom-editor hot-editor></custom-editor>
                                         </hot-column>*@
                                 </hot-table>
                             </div>
@@ -52,6 +53,40 @@
     </div>
 
     <button class="btn btn-primary btn-block mt-3" type="button" v-on:click="getDatas">getDatas to console log</button>
+
+    <div class="modal fade" :class="{ 'show' : showModal }" v-bind:style="'display: ' + (showModal ? 'block' : 'none')" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Data validation</h5>
+                    <button type="button" class="close" aria-label="Close"  v-on:click="showModal = false">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group form-row">
+                        <label class="col-form-label col-sm-4">Cell range</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="form-group form-row">
+                        <label class="col-form-label col-sm-4">Criteria</label>
+                        <div class="col-sm-8">
+                            <select class="form-control">
+                                <option value="value">text</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" v-on:click="showModal = false">Close</button>
+                    <button type="button" class="btn btn-outline-primary" v-on:click="showModal = false">Remove validation</button>
+                    <button type="button" class="btn btn-primary" v-on:click="showModal = false">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 
@@ -87,27 +122,100 @@
     <script src="~/lib/handsontable/vue/dist/vue-handsontable.js"></script>
     <script src="~/lib/dragula/dragula.js"></script>
 
+    <script type="text/x-template" id="editor-template">
+        <div v-if="isVisible" id="editorElement">
+            <input class="form-control" v-model="value" />
+        </div>
+    </script>
+
     <script>
-        class CustomEditor extends Handsontable.editors.TextEditor {
-            constructor(props) {
-                super(props);
-            }
+        //const CustomEditor = {
+        //    name: 'CustomEditor',
+        //    template: '#editor-template',
+        //    extends: Handsontable.vue.BaseEditorComponent,
+        //    data: function () {
+        //        return {
+        //            // We'll need to define properties in our data object,
+        //            // corresponding to all of the data being injected from
+        //            // the BaseEditorComponent class, which are:
+        //            // - hotInstance (instance of Handsontable)
+        //            // - row (row index)
+        //            // - col (column index)
+        //            // - prop (column property name)
+        //            // - TD (the HTML cell element)
+        //            // - originalValue (cell value passed to the editor)
+        //            // - cellProperties (the cellProperties object for the edited cell)
+        //            hotInstance: null,
+        //            TD: null,
+        //            row: null,
+        //            col: null,
+        //            prop: null,
+        //            originalValue: null,
+        //            value: '',
+        //            cellProperties: null,
+        //            isVisible: false,
+        //            style: {
+        //                position: 'absolute',
+        //                padding: '15px',
+        //                background: '#fff',
+        //                zIndex: 999,
+        //                border: '1px solid #000'
+        //            }
+        //        }
+        //    },
+        //    methods: {
+        //        stopMousedownPropagation: function (e) {
+        //            e.stopPropagation();
+        //        },
+        //        prepare: function (row, col, prop, td, originalValue, cellProperties) {
+        //            // We'll need to call the `prepare` method from
+        //            // the `BaseEditorComponent` class, as it provides
+        //            // the component with the information needed to use the editor
+        //            // (hotInstance, row, col, prop, TD, originalValue, cellProperties)
+        //            Handsontable.vue.BaseEditorComponent.options.methods.prepare.call(this, row, col, prop, td, originalValue, cellProperties);
 
-            createElements() {
-                super.createElements();
+        //            //if (!document.body.contains(this.$el)) {
+        //            //    document.body.appendChild(this.$el);
+        //            //}
 
-                this.TEXTAREA = document.createElement('input');
-                //this.TEXTAREA.setAttribute('placeholder', 'Custom placeholder');
-                this.TEXTAREA.setAttribute('class', 'cus-hot-input');
-                this.TEXTAREA.setAttribute('data-hot-input', true);
-                this.textareaStyle = this.TEXTAREA.style;
-                Handsontable.dom.empty(this.TEXTAREA_PARENT);
-                this.TEXTAREA_PARENT.appendChild(this.TEXTAREA);
-            }
-        }
+        //            $(this.$root).append(this.$el);
+
+
+        //            //console.log(this);
+
+        //            //const tdPosition = td.getBoundingClientRect();
+
+        //            ////// As the `prepare` method is triggered after selecting
+        //            ////// any cell, we're updating the styles for the editor element,
+        //            ////// so it shows up in the correct position.
+        //            //this.style.left = tdPosition.left + window.pageXOffset + 'px';
+        //            //this.style.top = tdPosition.top + window.pageYOffset + 'px';
+        //        },
+        //        setLowerCase: function () {
+        //            this.setValue(this.value.toLowerCase());
+        //            this.finishEditing();
+        //        },
+        //        setUpperCase: function () {
+        //            this.setValue(this.value.toUpperCase());
+        //            this.finishEditing();
+        //        },
+        //        open: function () {
+        //            this.isVisible = true;
+        //        },
+        //        close: function () {
+        //            this.isVisible = false;
+        //        },
+        //        setValue: function (value) {
+        //            this.value = value;
+        //        },
+        //        getValue: function () {
+        //            return this.value;
+        //        }
+        //    }
+        //};
 
         const CustomRenderer = {
-            template: '<div>{{value}}</div>',
+            template: '<div class="text-danger">{{value}}</div>',
             data: function () {
                 return {
                     // We'll need to define properties in our data object,
@@ -135,28 +243,27 @@
             }
         };
 
-        $(document).on('keyup', '.cus-hot-input', function (event) {
-            var keycode = event.keyCode;
-
-            if (keycode == 8) { // backspace
-                if (app.inputFormula != null) {
-                    app.inputFormula = app.inputFormula.slice(0, app.inputFormula.length - 1);
-                }
+        class CustomEditor extends Handsontable.editors.TextEditor {
+            constructor(props) {
+                super(props);
             }
+            createElements() {
+                super.createElements();
+                this.TEXTAREA = document.createElement('input');
+                //this.TEXTAREA.setAttribute('placeholder', 'Custom placeholder');
+                this.TEXTAREA.setAttribute('class', 'cus-hot-input');
+                this.TEXTAREA.setAttribute('data-hot-input', true);
+                this.textareaStyle = this.TEXTAREA.style;
+                Handsontable.dom.empty(this.TEXTAREA_PARENT);
+                this.TEXTAREA_PARENT.appendChild(this.TEXTAREA);
+            }
+        }
 
-            var valid =
-                (keycode > 47 && keycode < 58) || // number keys
-                keycode == 32 || // spacebar (if you want to allow carriage returns)
-                (keycode > 64 && keycode < 91) || // letter keys
-                (keycode > 95 && keycode < 112) || // numpad keys
-                (keycode > 185 && keycode < 193) || // ;=,-./` (in order)
-                (keycode > 218 && keycode < 223);   // [\]' (in order)
-            if (!valid)
-                return;
-            if (app.inputFormula == null)
-                app.inputFormula = '';
+        $(document).bind('keyup change', '.cus-hot-input', function (event) {
+
             app.isSuspense = true;
-            app.inputFormula += event.key;
+            if ($(event.target).val().trim() != '')
+                app.inputFormula = $(event.target).val();
         });
     </script>
 
@@ -184,6 +291,9 @@
                     outsideClickDeselects: false,
                     manualColumnResize: true,
                     manualRowResize: true,
+                    manualColumnMove: true,
+                    manualRowMove: true,
+                    stretchH: 'all',
                     editor: CustomEditor,
                     //columns: [
                     //    {
@@ -219,7 +329,43 @@
                     //        }
                     //    }
                     //],
-                    contextMenu: ['row_above', 'row_below', 'col_left', 'col_right', '---------', 'remove_row', 'remove_col', 'clear_column', 'alignment', 'mergeCells'],
+                    contextMenu: {
+                        callback: function (key, selection, clickEvent) {
+                            // Common callback for all options
+                            //console.log(key, selection, clickEvent);
+                        },
+                        items: {
+                            'cut': {
+                                name: 'Cut'
+                            },
+                            'copy': {
+                                name: 'Copy'
+                            },
+                            'separator_0': Handsontable.plugins.ContextMenu.SEPARATOR,
+                            'row_above': {
+                                name: 'Insert row'
+                            },
+                            'col_left': {
+                                name: 'Insert column'
+                            },
+                            'separator_1': Handsontable.plugins.ContextMenu.SEPARATOR,
+                            'remove_row': {
+                                name: 'Delete row'
+                            },
+                            'remove_col': {
+                                name: 'Delete column'
+                            },
+                            'separator_2': Handsontable.plugins.ContextMenu.SEPARATOR,
+                            'data_validation': {
+                                name: 'Data validation',
+                                callback: function () {
+                                    app.showModal = true;
+                                    let val = app.hotRef.getCoords(app.hotRef.getCell(app.activeCell.row, app.activeCell.col));
+                                    console.log(val);
+                                }
+                            },
+                        }
+                    },
                     licenseKey: 'non-commercial-and-evaluation',
                     //afterChange: () => {
                     //    if (this.hotRef) {
@@ -243,7 +389,8 @@
                 ],
                 isFormTab: true,
                 isEditorOpen: false,
-                isSuspense: false
+                isSuspense: false,
+                showModal: false
             },
             mounted() {
                 this.initHotForm();
@@ -334,7 +481,7 @@
             },
             watch: {
                 inputFormula: function (nv, ov) {
-                    if (nv == '' || this.hotRef.isEmptyRow(this.activeCell.row) || this.hotRef.isEmptyCol(this.activeCell.col) || !this.isSuspense) {
+                    if (nv == '' || this.hotRef.isEmptyRow(this.activeCell.row) || this.hotRef.isEmptyCol(this.activeCell.col) || this.isSuspense) {
                         this.isEditorOpen = false;
                         return;
                     }
@@ -344,7 +491,9 @@
             },
             components: {
                 HotTable: Handsontable.vue.HotTable,
-                HotColumn: Handsontable.vue.HotColumn
+                HotColumn: Handsontable.vue.HotColumn,
+                //CustomRenderer,
+                //CustomEditor
             },
         })
     </script>

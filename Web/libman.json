@@ -26,6 +26,11 @@
     {
       "library": "vuex@3.5.1",
       "destination": "wwwroot/lib/vuex/"
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "hyperformula@0.1.3",
+      "destination": "wwwroot/lib/hyperformula/"
     }
   ]
 }
