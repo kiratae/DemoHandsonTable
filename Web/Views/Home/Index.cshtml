@@ -59,7 +59,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Data validation</h5>
-                    <button type="button" class="close" aria-label="Close"  v-on:click="showModal = false">
+                    <button type="button" class="close" aria-label="Close" v-on:click="showModal = false">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -67,22 +67,22 @@
                     <div class="form-group form-row">
                         <label class="col-form-label col-sm-4">Cell range</label>
                         <div class="col-sm-8">
-                            <input type="text" class="form-control" />
+                            <input type="text" class="form-control" v-model="cellRange" />
                         </div>
                     </div>
                     <div class="form-group form-row">
                         <label class="col-form-label col-sm-4">Criteria</label>
                         <div class="col-sm-8">
-                            <select class="form-control">
-                                <option value="value">text</option>
+                            <select class="form-control" v-model="cellCriteriaValue">
+                                <option :value="criteria.value" v-for="criteria in cellCriterias">{{criteria.text}}</option>
                             </select>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-primary" v-on:click="showModal = false">Close</button>
-                    <button type="button" class="btn btn-outline-primary" v-on:click="showModal = false">Remove validation</button>
-                    <button type="button" class="btn btn-primary" v-on:click="showModal = false">Save</button>
+                    <button type="button" class="btn btn-outline-primary" v-on:click="removeCellType">Remove validation</button>
+                    <button type="button" class="btn btn-primary" v-on:click="setCellType">Save</button>
                 </div>
             </div>
         </div>
@@ -121,6 +121,10 @@
     <script src="~/lib/vue/vue.js"></script>
     <script src="~/lib/handsontable/vue/dist/vue-handsontable.js"></script>
     <script src="~/lib/dragula/dragula.js"></script>
+    <script src="~/lib/formula-parser/formula-parser.js"></script>
+
+    <script>
+    </script>
 
     <script type="text/x-template" id="editor-template">
         <div v-if="isVisible" id="editorElement">
@@ -360,8 +364,10 @@
                                 name: 'Data validation',
                                 callback: function () {
                                     app.showModal = true;
-                                    let val = app.hotRef.getCoords(app.hotRef.getCell(app.activeCell.row, app.activeCell.col));
-                                    console.log(val);
+                                    let letter = (65 + app.activeCell.col) > 90 ? String.fromCharCode(65 + app.activeCell.col / 65) + String.fromCharCode(65 + app.activeCell.col - 26) : String.fromCharCode(65 + app.activeCell.col);
+                                    app.cellRange = letter + (app.activeCell.row + 1);
+                                    let cellMeta = app.hotRef.getCellMeta(app.activeCell.row, app.activeCell.col);
+                                    app.cellCriteriaValue = cellMeta.type;
                                 }
                             },
                         }
@@ -390,12 +396,21 @@
                 isFormTab: true,
                 isEditorOpen: false,
                 isSuspense: false,
-                showModal: false
+                showModal: false,
+                cellRange: '',
+                cellCriteriaValue: 'text',
+                cellCriterias: [
+                    { value: 'text', text: 'text' },
+                    { value: 'date', text: 'date' },
+                    { value: 'numeric', text: 'numeric' },
+                ],
+                parser: null
             },
             mounted() {
                 this.initHotForm();
 
                 this.initDragula();
+                this.initParser();
             },
             methods: {
                 initHotForm() {
@@ -415,6 +430,37 @@
                         //console.log('drop', el);
                         //$(el).remove();
                     });
+                },
+                initParser() {
+                    const self = this;
+                    this.parser = new formulaParser.Parser();
+
+                    this.parser.on('callRangeValue', function (startCellCoord, endCellCoord, done) {
+                        var data = self.hotRef.getSourceData();
+                        console.log(data);
+                        var fragment = [];
+
+                        for (var row = startCellCoord.row.index; row <= endCellCoord.row.index; row++) {
+                            var rowData = data[row];
+                            var colFragment = [];
+
+                            for (var col = startCellCoord.column.index; col <= endCellCoord.column.index; col++) {
+                                colFragment.push(rowData[col]);
+                            }
+                            fragment.push(colFragment);
+                        }
+
+                        if (fragment) {
+                            done(fragment);
+                        }
+                    });
+
+                    this.parser.on('callCellValue', function (cellCoord, done) {
+                        done({ row: cellCoord.row.index, col: cellCoord.column.index });
+                    });
+
+                    //console.log(this.parser.parse('A1'));
+                    //console.log(this.parser.parse('A:A'));
                 },
                 afterSetCellMeta(row, col, key, val) {
                     //console.log("cell meta changed", row, col, key, val);
@@ -477,6 +523,22 @@
                 },
                 getDatas() {
                     console.log(this.hotRef.getSourceData());
+                },
+                setCellType() {
+                    this.showModal = false;
+                    //this.cellRange;
+                    let coord = this.parser.parse(this.cellRange).result;
+                    console.log(coord);
+                    this.hotRef.removeCellMeta(coord.row, coord.col, 'valid');
+                    this.hotRef.setCellMeta(coord.row, coord.col, 'type', this.cellCriteriaValue);
+                    this.hotRef.render();
+                },
+                removeCellType() {
+                    this.showModal = false;
+                    let coord = this.parser.parse(this.cellRange).result;
+                    this.hotRef.removeCellMeta(coord.row, coord.col, 'type');
+                    this.hotRef.removeCellMeta(coord.row, coord.col, 'valid');
+                    this.hotRef.render();
                 }
             },
             watch: {
