@@ -364,11 +364,22 @@
                                 name: 'Data validation',
                                 callback: function () {
                                     app.showModal = true;
-                                    let letter = (65 + app.activeCell.col) > 90 ? String.fromCharCode(65 + app.activeCell.col / 65) + String.fromCharCode(65 + app.activeCell.col - 26) : String.fromCharCode(65 + app.activeCell.col);
-                                    app.cellRange = letter + (app.activeCell.row + 1);
+                                    if (app.activeCell.col != app.activeCell.col2 || app.activeCell.row != app.activeCell.row2) {
+                                        let letter = app.getCellColumnLetter(app.activeCell.col);
+                                        let letter2 = app.getCellColumnLetter(app.activeCell.col2);
+                                        app.cellRange = letter + (app.activeCell.row + 1) + ':' + letter2 + (app.activeCell.row2 + 1) ;
+                                    } else {
+                                        let letter = app.getCellColumnLetter(app.activeCell.col);
+                                        app.cellRange = letter + (app.activeCell.row + 1);
+                                    }
                                     let cellMeta = app.hotRef.getCellMeta(app.activeCell.row, app.activeCell.col);
                                     app.cellCriteriaValue = cellMeta.type;
+                                    
                                 }
+                            },
+                            'separator_3': Handsontable.plugins.ContextMenu.SEPARATOR,
+                            'mergeCells': {
+                                name: 'Merge/Unmerge cells'
                             },
                         }
                     },
@@ -384,7 +395,8 @@
                 ],
                 inputFormula: '',
                 activeCell: {
-                    row: 0, col: 0
+                    row: 0, col: 0,
+                    row2: 0, col2: 0,
                 },
                 dragEl: null,
                 variables: [
@@ -436,27 +448,17 @@
                     this.parser = new formulaParser.Parser();
 
                     this.parser.on('callRangeValue', function (startCellCoord, endCellCoord, done) {
-                        var data = self.hotRef.getSourceData();
-                        console.log(data);
-                        var fragment = [];
-
-                        for (var row = startCellCoord.row.index; row <= endCellCoord.row.index; row++) {
-                            var rowData = data[row];
-                            var colFragment = [];
-
-                            for (var col = startCellCoord.column.index; col <= endCellCoord.column.index; col++) {
-                                colFragment.push(rowData[col]);
-                            }
-                            fragment.push(colFragment);
-                        }
-
-                        if (fragment) {
-                            done(fragment);
-                        }
+                        done({
+                            row: startCellCoord.row.index, col: startCellCoord.column.index,
+                            row2: endCellCoord.row.index, col2: endCellCoord.column.index,
+                        });
                     });
 
                     this.parser.on('callCellValue', function (cellCoord, done) {
-                        done({ row: cellCoord.row.index, col: cellCoord.column.index });
+                        done({
+                            row: cellCoord.row.index, col: cellCoord.column.index,
+                            row2: cellCoord.row.index, col2: cellCoord.column.index,
+                        });
                     });
 
                     //console.log(this.parser.parse('A1'));
@@ -468,6 +470,8 @@
                 afterSelection(row, col, row2, col2, selectionLayerLevel) {
                     this.activeCell.row = row;
                     this.activeCell.col = col;
+                    this.activeCell.row2 = row2;
+                    this.activeCell.col2 = col2;
                     //console.log(`afterSelection -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
                     this.inputFormula = this.hotRef.getSourceDataAtCell(row, col);
                     this.isEditorOpen = true;
@@ -506,6 +510,8 @@
 
                     this.$nextTick(function () {
                         this.inputFormula = '';
+                        this.hotRef.getPlugin('Formulas').recalculateOptimized();
+                        this.hotRef.render();
                     });
                 },
                 afterSetDataAtCell(changes, source) {
@@ -529,8 +535,14 @@
                     //this.cellRange;
                     let coord = this.parser.parse(this.cellRange).result;
                     console.log(coord);
+                    for (var row = coord.row; row <= coord.row2; row++) {
+                        for (var col = coord.col; col <= coord.col2; col++) {
+                            colFragment.push(rowData[col]);
+                        }
+                    }
                     this.hotRef.removeCellMeta(coord.row, coord.col, 'valid');
                     this.hotRef.setCellMeta(coord.row, coord.col, 'type', this.cellCriteriaValue);
+                    this.hotRef.getPlugin('Formulas').recalculateOptimized();
                     this.hotRef.render();
                 },
                 removeCellType() {
@@ -538,7 +550,11 @@
                     let coord = this.parser.parse(this.cellRange).result;
                     this.hotRef.removeCellMeta(coord.row, coord.col, 'type');
                     this.hotRef.removeCellMeta(coord.row, coord.col, 'valid');
+                    this.hotRef.getPlugin('Formulas').recalculateOptimized();
                     this.hotRef.render();
+                },
+                getCellColumnLetter(col) {
+                    return (65 + col) > 90 ? String.fromCharCode(65 + col / 65) + String.fromCharCode(65 + col - 26) : String.fromCharCode(65 + col);
                 }
             },
             watch: {
