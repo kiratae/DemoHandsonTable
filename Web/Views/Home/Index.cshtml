@@ -383,12 +383,7 @@
                             },
                         }
                     },
-                    licenseKey: 'non-commercial-and-evaluation',
-                    //afterChange: () => {
-                    //    if (this.hotRef) {
-                    //        this.$store.commit('updateData', this.hotRef.getSourceData());
-                    //    }
-                    //}
+                    licenseKey: 'non-commercial-and-evaluation'
                 },
                 hotCell: [
                     //{ row: 0, col: 0, className: "htCenter htMiddle" },
@@ -502,7 +497,7 @@
                     $(event.target).blur();
                     this.isEditorOpen = false;
                     this.isSuspense = false;
-                    //console.log(`inputFormulaEnter -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
+                    console.log(`inputFormulaEnter -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
                     this.hotRef.setDataAtCell(this.activeCell.row, this.activeCell.col, this.inputFormula, 'user input enter!');
 
                     // if move select down
@@ -510,12 +505,12 @@
 
                     this.$nextTick(function () {
                         this.inputFormula = '';
-                        this.hotRef.getPlugin('Formulas').recalculateOptimized();
-                        this.hotRef.render();
                     });
                 },
                 afterSetDataAtCell(changes, source) {
                     //console.log('afterSetDataAtCell', changes);
+                    //this.hotRef.getPlugin('Formulas').recalculateOptimized();
+                    this.inputFormula = '';
                 },
                 changeTab(tab) {
                     if (tab == 'form') {
@@ -537,11 +532,10 @@
                     console.log(coord);
                     for (var row = coord.row; row <= coord.row2; row++) {
                         for (var col = coord.col; col <= coord.col2; col++) {
-                            colFragment.push(rowData[col]);
+                            this.hotRef.removeCellMeta(row, col, 'valid');
+                            this.hotRef.setCellMeta(row, col, 'type', this.cellCriteriaValue);
                         }
                     }
-                    this.hotRef.removeCellMeta(coord.row, coord.col, 'valid');
-                    this.hotRef.setCellMeta(coord.row, coord.col, 'type', this.cellCriteriaValue);
                     this.hotRef.getPlugin('Formulas').recalculateOptimized();
                     this.hotRef.render();
                 },
