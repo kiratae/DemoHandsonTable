@@ -1,53 +1,235 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Demo2";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<div id="app">
+    <h1>{{ message }}</h1>
 
-@Html.ActionLink("Handsontable", "Index")&emsp;|&emsp;@Html.ActionLink("jExcel", "Index1")
+    <hr />
 
-<hr />
+    <div class="row">
+        <div class="col-10">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="form-tab" data-toggle="tab" href="#form" role="tab" aria-controls="form" aria-selected="true" v-on:click="rerender('form')">จัดการแบบฟอร์ม</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="cell-data-tab" data-toggle="tab" href="#cell-data" role="tab" aria-controls="cell-data" aria-selected="false" v-on:click="rerender('cell-data')">จัดการข้อมูลตาราง</a>
+                </li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane active" id="form" role="tabpanel" aria-labelledby="form-tab">
 
-<h1>jExcel</h1>
+                    <div class="card">
+                        <div class="card-body">
 
-<div class="w-100">
-    <div id="app"></div>
+                            <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 100%; overflow: hidden; width: 100%;">
+                                <hot-table ref="formWrapper" :settings="hotFormSettings"></hot-table>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+                <div class="tab-pane" id="cell-data" role="tabpanel" aria-labelledby="cell-data-tab">
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="hot handsontable htRowHeaders htColumnHeaders" id="cellDataSheet" style="height: 100%; overflow: hidden; width: 100%;">
+                                <hot-table ref="cellDataWrapper" :settings="hotCellDataSettings"></hot-table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-2">
+            <div class="card h-100" v-bind:class="{ 'd-none' : isFormTab }">
+                <div class="card-header">
+                    <span class="card-title">จัดการสูตรคำนวน</span>
+                </div>
+                <div class="card-body">
+                    <div class="list-group" id="variables">
+                        <div class="list-group-item px-3 py-2" v-for="item in variables">
+                            <i class="fa fa-clone handle mr-2"></i>
+                            <span>{{ item.tag }} </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 </div>
 
 @section Head {
-    <link rel="stylesheet" href="https://bossanova.uk/jexcel/v4/jexcel.css" type="text/css" />
-    <link rel="stylesheet" href="https://bossanova.uk/jsuites/v3/jsuites.css" type="text/css" />
+    <link rel="stylesheet" href="~/lib/handsontable/handsontable.full.css" />
+    <link rel="stylesheet" href="~/lib/dragula/dragula.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.css" />
 }
 
 @section Scripts {
-    <script src="~/lib/jquery/jquery.min.js"></script>
+    <script src="~/lib/jquery/jquery.js"></script>
+    <script src="~/lib/handsontable/handsontable.full.js"></script>
     <script src="~/lib/vue/vue.js"></script>
-    <script src="https://bossanova.uk/jexcel/v4/jexcel.js"></script>
-    <script src="https://bossanova.uk/jsuites/v3/jsuites.js"></script>
+    <script src="~/lib/handsontable/vue/dist/vue-handsontable.js"></script>
+    <script src="~/lib/dragula/dragula.js"></script>
+    <script src="~/lib/formula-parser/formula-parser.js"></script>
 
     <script>
-        var options = {
-            data: [[]],
-            minDimensions: [26, 1000],
-            defaultColWidth: 100,
-            parseFormulas: true,
-            rowResize: true,
-            columnResize: true,
-            columnSorting: true,
-            tableOverflow: true,
-            tableHeight: '420px',
-            tableWidth: '100%',
-        }
-
         var app = new Vue({
             el: '#app',
+            data: {
+                message: 'Hansontable! Demo1',
+                hotFormRef: null,
+                hotCellDataRef: null,
+                hotFormSettings: {
+                    startRows: 1,
+                    startCols: 1,
+                    rowHeaders: true,
+                    colHeaders: true,
+                    contextMenu: true,
+                    mergeCells: true,
+                    width: '100%',
+                    height: 'auto',
+                    outsideClickDeselects: true,
+                    manualColumnResize: true,
+                    manualRowResize: true,
+                    manualColumnMove: true,
+                    manualRowMove: true,
+                    stretchH: 'all',
+                    contextMenu: {
+                        items: {
+                            'cut': {
+                                name: 'Cut'
+                            },
+                            'copy': {
+                                name: 'Copy'
+                            },
+                            'separator_0': Handsontable.plugins.ContextMenu.SEPARATOR,
+                            'row_above': {
+                                name: 'Insert row'
+                            },
+                            'col_left': {
+                                name: 'Insert column'
+                            },
+                            'separator_1': Handsontable.plugins.ContextMenu.SEPARATOR,
+                            'remove_row': {
+                                name: 'Delete row'
+                            },
+                            'remove_col': {
+                                name: 'Delete column'
+                            },
+                            'separator_2': Handsontable.plugins.ContextMenu.SEPARATOR,
+                            'mergeCells': {
+                                name: 'Merge/Unmerge cells'
+                            },
+                        }
+                    },
+                    licenseKey: 'non-commercial-and-evaluation'
+                },
+                hotCellDataSettings: {
+                    rowHeaders: true,
+                    colHeaders: true,
+                    //contextMenu: true,
+                    mergeCells: true,
+                    width: 'auto',
+                    height: 'auto',
+                    readOnly: true,
+                    stretchH: 'all',
+                    licenseKey: 'non-commercial-and-evaluation'
+                },
+                isFormTab: true,
+                dragEl: null,
+                variables: [
+                    { id: 1, tag: '!A' },
+                    { id: 2, tag: '!B' },
+                    { id: 3, tag: '!C' },
+                    { id: 4, tag: '!D' },
+                ],
+                cellDataTab: {
+                    mouseOnCoords: null
+                }
+            },
             mounted() {
-                let spreadsheet = jexcel(this.$el, options);
-                Object.assign(this, spreadsheet);
-            }
+                this.initHotForm();
+                this.initHotCellData();
+                this.initDragula();
+            },
+            methods: {
+                initHotForm() {
+                    const self = this;
+                    this.hotFormRef = this.$refs.formWrapper.hotInstance;
+
+                    setTimeout(function () {
+                        self.hotFormRef.render();
+                        setTimeout(function () {
+                            self.hotFormRef.render();
+                        }, 5);
+                    }, 5);
+                },
+                initHotCellData() {
+                    const self = this;
+                    this.hotCellDataRef = this.$refs.cellDataWrapper.hotInstance;
+
+                    Handsontable.hooks.add('beforeOnCellMouseOver', this.beforeOnCellMouseOver, this.hotCellDataRef);
+
+                    setTimeout(function () {
+                        self.hotCellDataRef.render();
+                        setTimeout(function () {
+                            self.hotCellDataRef.render();
+                        }, 5);
+                    }, 5);
+                },
+                initDragula() {
+                    const self = this;
+                    this.dragEl = dragula([document.querySelector('#variables')], {
+                        invalid: function (el, handle) {
+                            console.log($(handle).hasClass('handle'));
+                            return !$(handle).hasClass('handle'); // don't prevent any drags from initiating by default
+                        },
+                    })
+                        .on('cancel', function (el) {
+                            console.log('cancel', el);
+
+                            if (self.cellDataTab.mouseOnCoords != null && self.hotCellDataRef != null) {
+                                console.log('setDataAtCell', self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, $(el).text());
+                                self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, $(el).text(), 'user drag from dragula');
+                                self.cellDataTab.mouseOnCoords = null;
+                            }
+                        })
+                        .on('drop', function (el) {
+                            console.log('drop', el);
+                            //$(el).remove();
+                            if (self.cellDataTab.mouseOnCoords != null && self.hotCellDataRef != null) {
+                                //self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, )
+                            }
+                        });
+                },
+                rerender(type) {
+                    console.log('rerender!');
+                    if (type == 'form') {
+                        this.isFormTab = true;
+                        this.initHotForm();
+                    } else if (type == 'cell-data') {
+                        this.isFormTab = false;
+                        this.initHotCellData();
+                    }
+                },
+                beforeOnCellMouseOver(event, coords, TD) {
+                    if (coords.row != -1 && coords.col != -1) {
+                        this.cellDataTab.mouseOnCoords = coords;
+                        console.log('beforeOnCellMouseOver', this.cellDataTab.mouseOnCoords);
+                    } else {
+                        this.cellDataTab.mouseOnCoords = null;
+                    }
+                }
+            },
+            components: {
+                HotTable: Handsontable.vue.HotTable
+            },
         })
     </script>
 }
