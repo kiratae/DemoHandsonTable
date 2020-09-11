@@ -8,7 +8,7 @@
     <hr />
 
     <div class="row">
-        <div class="col-10">
+        <div class="col-9">
             <ul class="nav nav-tabs" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link active" id="form-tab" data-toggle="tab" href="#form" role="tab" aria-controls="form" aria-selected="true" v-on:click="rerender('form')">จัดการแบบฟอร์ม</a>
@@ -44,23 +44,46 @@
                 </div>
             </div>
         </div>
-        <div class="col-2">
+        <div class="col-3">
             <div class="card h-100" v-bind:class="{ 'd-none' : isFormTab }">
                 <div class="card-header">
                     <span class="card-title">จัดการสูตรคำนวน</span>
                 </div>
                 <div class="card-body">
                     <div class="list-group" id="variables">
-                        <div class="list-group-item px-3 py-2" v-for="item in variables">
-                            <i class="fa fa-clone handle mr-2"></i>
-                            <span>{{ item.tag }} </span>
+                        <div class="list-group-item px-3 py-2" v-for="item in variables" :data-variable-id="item.variableId">
+                            <button class="btn p-0 handle mr-1 fa fa-arrows-alt text-black-50" type="button"></button>
+                            <span>{{ item.text }} </span>
                         </div>
                     </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary" type="button" v-on:click="test">test</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    ...
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 
@@ -68,6 +91,12 @@
     <link rel="stylesheet" href="~/lib/handsontable/handsontable.full.css" />
     <link rel="stylesheet" href="~/lib/dragula/dragula.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.css" />
+
+    <style>
+        .is-readOnly{
+            border: 1px solid red;
+        }
+    </style>
 }
 
 @section Scripts {
@@ -79,6 +108,20 @@
     <script src="~/lib/formula-parser/formula-parser.js"></script>
 
     <script>
+        var greenRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+            Handsontable.renderers.TextRenderer.apply(this, arguments);
+            console.log(cellProperties.variable);
+            if (value != null && value != '') {
+                if (cellProperties.variable)
+                    $(td).html('<button class="btn btn-link p-0" role="button" data-toggle="modal" data-target="#exampleModal">' + cellProperties.variable.text + '</button>');
+            }
+            if (cellProperties.isTemplate) {
+                $(td).css('background-color', '#f8f8f8');
+            }
+        };
+    </script>
+
+    <script>
         var app = new Vue({
             el: '#app',
             data: {
@@ -86,8 +129,8 @@
                 hotFormRef: null,
                 hotCellDataRef: null,
                 hotFormSettings: {
-                    startRows: 1,
-                    startCols: 1,
+                    startRows: 3,
+                    startCols: 3,
                     rowHeaders: true,
                     colHeaders: true,
                     contextMenu: true,
@@ -99,7 +142,7 @@
                     manualRowResize: true,
                     manualColumnMove: true,
                     manualRowMove: true,
-                    stretchH: 'all',
+                    stretchH: 'last',
                     contextMenu: {
                         items: {
                             'cut': {
@@ -123,6 +166,10 @@
                                 name: 'Delete column'
                             },
                             'separator_2': Handsontable.plugins.ContextMenu.SEPARATOR,
+                            'alignment': {
+                                name: 'Alignment'
+                            },
+                            'separator_3': Handsontable.plugins.ContextMenu.SEPARATOR,
                             'mergeCells': {
                                 name: 'Merge/Unmerge cells'
                             },
@@ -131,6 +178,7 @@
                     licenseKey: 'non-commercial-and-evaluation'
                 },
                 hotCellDataSettings: {
+                    data: [],
                     rowHeaders: true,
                     colHeaders: true,
                     //contextMenu: true,
@@ -138,30 +186,52 @@
                     width: 'auto',
                     height: 'auto',
                     readOnly: true,
-                    stretchH: 'all',
+                    disableVisualSelection: true,
+                    stretchH: 'last',
+                    renderer: greenRenderer,
                     licenseKey: 'non-commercial-and-evaluation'
                 },
                 isFormTab: true,
                 dragEl: null,
                 variables: [
-                    { id: 1, tag: '!A' },
-                    { id: 2, tag: '!B' },
-                    { id: 3, tag: '!C' },
-                    { id: 4, tag: '!D' },
+                    {
+                        variableId: 1,
+                        text: "person",
+                        value: 5,
+                        formula: null
+                    },
+                    {
+                        variableId: 4,
+                        text: "summary1",
+                        value: 10,
+                        formula: '=!1 + !2 + !3'
+                    },
+                    {
+                        variableId: 5,
+                        text: "summaryall",
+                        value: 10,
+                        formula: '=SUM(!cash.1, !dep.1.1, ...)'
+                    }
                 ],
                 cellDataTab: {
                     mouseOnCoords: null
-                }
+                },
+                cellMergeData: []
             },
             mounted() {
                 this.initHotForm();
-                this.initHotCellData();
+                //this.initHotCellData();
                 this.initDragula();
             },
             methods: {
+                cloneObj(obj) {
+                    return Object.assign({}, obj);
+                },
                 initHotForm() {
                     const self = this;
                     this.hotFormRef = this.$refs.formWrapper.hotInstance;
+
+                    Handsontable.hooks.add('afterMergeCells', this.afterMergeCells, this.hotFormRef);
 
                     setTimeout(function () {
                         self.hotFormRef.render();
@@ -170,7 +240,7 @@
                         }, 5);
                     }, 5);
                 },
-                initHotCellData() {
+                initHotCellData(callback) {
                     const self = this;
                     this.hotCellDataRef = this.$refs.cellDataWrapper.hotInstance;
 
@@ -179,6 +249,8 @@
                     setTimeout(function () {
                         self.hotCellDataRef.render();
                         setTimeout(function () {
+                            if (callback)
+                                callback();
                             self.hotCellDataRef.render();
                         }, 5);
                     }, 5);
@@ -186,45 +258,117 @@
                 initDragula() {
                     const self = this;
                     this.dragEl = dragula([document.querySelector('#variables')], {
-                        invalid: function (el, handle) {
-                            console.log($(handle).hasClass('handle'));
-                            return !$(handle).hasClass('handle'); // don't prevent any drags from initiating by default
+                        moves: function (el, source, handle, sibling) {
+                            //console.log($(handle).hasClass('handle'));
+                            return $(handle).hasClass('handle'); // don't prevent any drags from initiating by default
                         },
                     })
                         .on('cancel', function (el) {
                             console.log('cancel', el);
 
                             if (self.cellDataTab.mouseOnCoords != null && self.hotCellDataRef != null) {
-                                console.log('setDataAtCell', self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, $(el).text());
-                                self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, $(el).text(), 'user drag from dragula');
+                                let isTemplate = self.hotCellDataRef.getCellMeta(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col).isTemplate;
+                                if (!isTemplate) {
+                                    let variable = self.getVariableById($(el).data('variable-id'));
+                                    let text = '!' + $(el).text().trim();
+                                    self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, text, 'user drag from dragula');
+                                    self.hotCellDataRef.setCellMetaObject(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, { variable: variable });
+                                    self.hotCellDataRef.render();
+                                }
                                 self.cellDataTab.mouseOnCoords = null;
                             }
                         })
-                        .on('drop', function (el) {
-                            console.log('drop', el);
-                            //$(el).remove();
-                            if (self.cellDataTab.mouseOnCoords != null && self.hotCellDataRef != null) {
-                                //self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, )
-                            }
-                        });
                 },
                 rerender(type) {
+                    const self = this;
                     console.log('rerender!');
                     if (type == 'form') {
                         this.isFormTab = true;
                         this.initHotForm();
                     } else if (type == 'cell-data') {
                         this.isFormTab = false;
-                        this.initHotCellData();
+                        let cellMetas = this.hotFormRef.getCellsMeta();
+                        let data = this.hotFormRef.getData();
+                        let colCount = this.hotFormRef.countVisibleCols();
+                        let rowCount = this.hotFormRef.countVisibleRows();
+                        let colWidths = [];
+                        for (let i = 0; i < colCount; i++) {
+                            colWidths.push(this.hotFormRef.getColWidth(i));
+                        }
+                        
+                        console.log(data, cellMetas, colWidths, colCount, rowCount);
+
+                        this.initHotCellData(function () {
+                            // set data from form sheet
+                            let cellDatas = self.hotCellDataRef.getData();
+                            if (cellDatas.length == 0) {
+                                self.hotCellDataRef.loadData(data);
+                            } else {
+                                for (let r = 0; r < rowCount; r++) {
+                                    for (let c = 0; c < colCount; c++) {
+                                        if (cellDatas[r][c] && !data[r][c]) {
+                                            data[r][c] = cellDatas[r][c];
+                                        }
+                                    }
+                                }
+                                self.hotCellDataRef.setDataAtCell(self.getCellDataSet(data));
+                            }
+                            
+                            // set column width from form sheet
+                            self.hotCellDataRef.updateSettings({
+                                colWidths: colWidths
+                            });
+                            // set class from form sheet
+                            for (let cell of cellMetas) {
+                                if (cell.className)
+                                    self.hotCellDataRef.setCellMeta(cell.row, cell.col, 'className', cell.className);
+                                if (self.hotFormRef.getDataAtCell(cell.row, cell.col) != null && self.hotFormRef.getDataAtCell(cell.row, cell.col) != '') {
+                                    self.hotCellDataRef.setCellMetaObject(cell.row, cell.col, { isTemplate: true });
+                                }
+                            }
+                            // set merge cell from form sheet
+                            for (let cell of self.cellMergeData) {
+                                self.hotCellDataRef.getPlugin('MergeCells').merge(cell.from.row, cell.from.col, cell.to.row, cell.to.col);
+                            }
+
+                            self.hotCellDataRef.render();
+
+                            delete data;
+                            delete colWidths;
+                            delete cellMetas;
+                        });
                     }
                 },
                 beforeOnCellMouseOver(event, coords, TD) {
-                    if (coords.row != -1 && coords.col != -1) {
+                    if (coords.row != -1 && coords.col != -1 && this.dragEl.dragging) {
                         this.cellDataTab.mouseOnCoords = coords;
-                        console.log('beforeOnCellMouseOver', this.cellDataTab.mouseOnCoords);
+                        //console.log('beforeOnCellMouseOver', this.cellDataTab.mouseOnCoords);
                     } else {
                         this.cellDataTab.mouseOnCoords = null;
                     }
+                },
+                getVariableById(variableId) {
+                    return this.cloneObj(this.variables[this.variables.findIndex(item => item.variableId == variableId)]);
+                },
+                test() {
+                    console.log(this.hotCellDataRef.getSourceData());
+                    console.log(this.hotCellDataRef.getCellsMeta());
+                },
+                afterMergeCells(cellRange, mergeParent, auto) {
+                    console.log('afterMergeCells', cellRange, mergeParent, auto);
+                    this.cellMergeData.push(cellRange);
+                },
+                isVariable(str) {
+                    return str[0] == '!';
+                },
+                getCellDataSet(rowCount, colCount, arr) {
+                    let list = [];
+                    for (let r = 0; r < rowCount; r++) {
+                        for (let c = 0; c < colCount; c++) {
+                            list.push([r, c, arr[r][c]]);
+                        }
+                    }
+                    return list;
                 }
             },
             components: {

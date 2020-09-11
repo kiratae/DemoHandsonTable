@@ -1,6 +1,6 @@
 .gu-mirror {
     position: fixed !important;
-    margin: 2rem 0 0 2rem !important;
+    margin: 2.5rem 0 0 2.5rem !important;
     z-index: 9999 !important;
     opacity: 0.8;
     -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
