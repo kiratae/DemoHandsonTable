@@ -244,7 +244,8 @@
                     const self = this;
                     this.hotCellDataRef = this.$refs.cellDataWrapper.hotInstance;
 
-                    Handsontable.hooks.add('beforeOnCellMouseOver', this.beforeOnCellMouseOver, this.hotCellDataRef);
+                    Handsontable.hooks.add('afterOnCellMouseOver', this.afterOnCellMouseOver, this.hotCellDataRef);
+                    Handsontable.hooks.add('afterOnCellMouseOut', this.afterOnCellMouseOut, this.hotCellDataRef);
 
                     setTimeout(function () {
                         self.hotCellDataRef.render();
@@ -263,21 +264,21 @@
                             return $(handle).hasClass('handle'); // don't prevent any drags from initiating by default
                         },
                     })
-                        .on('cancel', function (el) {
-                            console.log('cancel', el);
+                    .on('cancel', function (el) {
+                        console.log('cancel', el);
 
-                            if (self.cellDataTab.mouseOnCoords != null && self.hotCellDataRef != null) {
-                                let isTemplate = self.hotCellDataRef.getCellMeta(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col).isTemplate;
-                                if (!isTemplate) {
-                                    let variable = self.getVariableById($(el).data('variable-id'));
-                                    let text = '!' + $(el).text().trim();
-                                    self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, text, 'user drag from dragula');
-                                    self.hotCellDataRef.setCellMetaObject(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, { variable: variable });
-                                    self.hotCellDataRef.render();
-                                }
-                                self.cellDataTab.mouseOnCoords = null;
+                        if (self.cellDataTab.mouseOnCoords != null && self.hotCellDataRef != null) {
+                            let isTemplate = self.hotCellDataRef.getCellMeta(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col).isTemplate;
+                            if (!isTemplate) {
+                                let variable = self.getVariableById($(el).data('variable-id'));
+                                let text = '!' + $(el).text().trim();
+                                self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, text, 'user drag from dragula');
+                                self.hotCellDataRef.setCellMetaObject(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, { variable: variable });
+                                self.hotCellDataRef.render();
                             }
-                        })
+                            self.cellDataTab.mouseOnCoords = null;
+                        }
+                    })
                 },
                 rerender(type) {
                     const self = this;
@@ -339,13 +340,27 @@
                         });
                     }
                 },
-                beforeOnCellMouseOver(event, coords, TD) {
+                afterOnCellMouseOver(event, coords, TD) {
                     if (coords.row != -1 && coords.col != -1 && this.dragEl.dragging) {
-                        this.cellDataTab.mouseOnCoords = coords;
+                        let isTemplate = this.hotCellDataRef.getCellMeta(coords.row, coords.col).isTemplate;
+                        if (!isTemplate) {
+                            if (TD.className != 'bg-warning') {
+                                TD.className = 'bg-warning';
+                                this.cellDataTab.mouseOnCoords = coords;
+                            }
+                        } else {
+                            this.cellDataTab.mouseOnCoords = null;
+                            TD.className = '';
+                        }
                         //console.log('beforeOnCellMouseOver', this.cellDataTab.mouseOnCoords);
                     } else {
                         this.cellDataTab.mouseOnCoords = null;
+                        TD.className = '';
                     }
+                },
+                afterOnCellMouseOut(event, coords, TD) {
+                    this.cellDataTab.mouseOnCoords = null;
+                    TD.className = '';x
                 },
                 getVariableById(variableId) {
                     return this.cloneObj(this.variables[this.variables.findIndex(item => item.variableId == variableId)]);
