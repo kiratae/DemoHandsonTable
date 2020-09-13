@@ -1,50 +1,42 @@
 ﻿@{
-    ViewData["Title"] = "Hansontable Demo";
+    ViewData["Title"] = "Demo2";
 }
-
-@Html.ActionLink("goto full demo", "index1", "home")
 
 <div id="app">
     <h1>{{ message }}</h1>
+
     <hr />
 
-    <div class="form-row mb-3">
-        <label class="col-form-label col-auto">fx</label>
-        <div class="col">
-            <input type="text" v-model="inputFormula" class="form-control" v-on:keyup.enter="inputFormulaEnter" />
-        </div>
-    </div>
-    @*<ul class="nav nav-tabs border-bottom-0" id="myTab">
-            <li class="nav-item">
-                <a class="nav-link" v-bind:class="{ active : isFormTab }" href="javascript:void(0)" v-on:click="changeTab('form')">Form</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" v-bind:class="{ active : !isFormTab }" href="javascript:void(0)" v-on:click="changeTab('cell-data')">Cell Data</a>
-            </li>
-        </ul>*@
-    <div class="tab-content">
-        <div class="tab-pane fade show active" role="tabpanel">
-            <div class="card">
-                <div class="card-body">
+    <div class="row">
+        <div class="col-9">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="form-tab" data-toggle="tab" href="#form" role="tab" aria-controls="form" aria-selected="true" v-on:click="rerender('form')">จัดการแบบฟอร์ม</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="cell-data-tab" data-toggle="tab" href="#cell-data" role="tab" aria-controls="cell-data" aria-selected="false" v-on:click="rerender('cell-data')">จัดการข้อมูลตาราง</a>
+                </li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane active" id="form" role="tabpanel" aria-labelledby="form-tab">
 
-                    <div class="row">
-                        <div v-bind:class="isFormTab ? 'col-12' : 'col-10'">
-                            <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 420px; overflow: hidden; width: 100%;">
-                                <hot-table ref="wrapper" :settings="hotSettings">
-                                    @*<hot-column v-for="n in 15" v-bind:key="'col' + n">
-                                            <custom-renderer hot-renderer></custom-renderer>
-                                            <custom-editor hot-editor></custom-editor>
-                                        </hot-column>*@
-                                </hot-table>
+                    <div class="card">
+                        <div class="card-body">
+
+                            <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 100%; overflow: hidden; width: 100%;">
+                                <hot-table ref="formWrapper" :settings="hotFormSettings"></hot-table>
                             </div>
+
                         </div>
-                        <div v-bind:class="isFormTab ? 'd-none' : 'col-2'">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <ul class="list-group" id="variables">
-                                        <li class="list-group-item" v-for="item in variables">{{ item.tag }}</li>
-                                    </ul>
-                                </div>
+                    </div>
+
+                </div>
+                <div class="tab-pane" id="cell-data" role="tabpanel" aria-labelledby="cell-data-tab">
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="hot handsontable htRowHeaders htColumnHeaders" id="cellDataSheet" style="height: 100%; overflow: hidden; width: 100%;">
+                                <hot-table ref="cellDataWrapper" :settings="hotCellDataSettings"></hot-table>
                             </div>
                         </div>
                     </div>
@@ -52,39 +44,73 @@
                 </div>
             </div>
         </div>
+        <div class="col-3">
+            <div class="card h-100" v-bind:class="{ 'd-none' : isFormTab }">
+                <div class="card-header">
+                    <span class="card-title">จัดการสูตรคำนวน</span>
+                </div>
+                <div class="card-body">
+                    <div class="list-group" id="variables">
+                        <div class="list-group-item px-3 py-2" v-for="item in variables" :data-variable-id="item.variableId">
+                            <button class="btn p-0 handle mr-1 fa fa-arrows-alt text-black-50" type="button"></button>
+                            <span>{{ item.text }} </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary" type="button" v-on:click="test">test</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <button class="btn btn-primary btn-block mt-3" type="button" v-on:click="getDatas">getDatas to console log</button>
-
-    <div class="modal fade" :class="{ 'show' : showModal }" v-bind:style="'display: ' + (showModal ? 'block' : 'none')" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-dialog-centered" role="document">
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Data validation</h5>
-                    <button type="button" class="close" aria-label="Close" v-on:click="showModal = false">
+                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div class="form-group form-row">
-                        <label class="col-form-label col-sm-4">Cell range</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" v-model="cellRange" />
+                    <div class="form-group">
+                        <label>ชื่อช่อง</label>
+                        <input type="text" v-model="varibleModal.text" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label>ตรวจสอบข้อมูล</label>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <select class="form-control">
+                                            <option value="value">text</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <select class="form-control">
+                                            <option value="value">text</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <button class="btn"><i class="fa fa-plus-circle"></i>&ensp;เพิ่มข้อมูล</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="form-group form-row">
-                        <label class="col-form-label col-sm-4">Criteria</label>
-                        <div class="col-sm-8">
-                            <select class="form-control" v-model="cellCriteriaValue">
-                                <option :value="criteria.value" v-for="criteria in cellCriterias">{{criteria.text}}</option>
-                            </select>
-                        </div>
+                    <div class="form-group">
+                        <label>สูตรการคำนวน</label>
+                        <textarea v-model="varibleModal.formula" class="form-control"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-primary" v-on:click="showModal = false">Close</button>
-                    <button type="button" class="btn btn-outline-primary" v-on:click="removeCellType">Remove validation</button>
-                    <button type="button" class="btn btn-primary" v-on:click="setCellType">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
                 </div>
             </div>
         </div>
@@ -95,25 +121,12 @@
 @section Head {
     <link rel="stylesheet" href="~/lib/handsontable/handsontable.full.css" />
     <link rel="stylesheet" href="~/lib/dragula/dragula.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.css" />
 
     <style>
-        .flex-contianer {
-            list-style: none;
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
+        .is-readOnly {
+            border: 1px solid red;
         }
-
-            .flex-contianer > li {
-                margin: 0 5px;
-                padding: 5px;
-                cursor: pointer;
-            }
-
-                .flex-contianer > li:hover {
-                    color: red;
-                    text-decoration: underline;
-                }
     </style>
 }
 
@@ -126,150 +139,25 @@
     <script src="~/lib/formula-parser/formula-parser.js"></script>
 
     <script>
-    </script>
-
-    <script type="text/x-template" id="editor-template">
-        <div v-if="isVisible" id="editorElement">
-            <input class="form-control" v-model="value" />
-        </div>
-    </script>
-
-    <script>
-        //const CustomEditor = {
-        //    name: 'CustomEditor',
-        //    template: '#editor-template',
-        //    extends: Handsontable.vue.BaseEditorComponent,
-        //    data: function () {
-        //        return {
-        //            // We'll need to define properties in our data object,
-        //            // corresponding to all of the data being injected from
-        //            // the BaseEditorComponent class, which are:
-        //            // - hotInstance (instance of Handsontable)
-        //            // - row (row index)
-        //            // - col (column index)
-        //            // - prop (column property name)
-        //            // - TD (the HTML cell element)
-        //            // - originalValue (cell value passed to the editor)
-        //            // - cellProperties (the cellProperties object for the edited cell)
-        //            hotInstance: null,
-        //            TD: null,
-        //            row: null,
-        //            col: null,
-        //            prop: null,
-        //            originalValue: null,
-        //            value: '',
-        //            cellProperties: null,
-        //            isVisible: false,
-        //            style: {
-        //                position: 'absolute',
-        //                padding: '15px',
-        //                background: '#fff',
-        //                zIndex: 999,
-        //                border: '1px solid #000'
-        //            }
-        //        }
-        //    },
-        //    methods: {
-        //        stopMousedownPropagation: function (e) {
-        //            e.stopPropagation();
-        //        },
-        //        prepare: function (row, col, prop, td, originalValue, cellProperties) {
-        //            // We'll need to call the `prepare` method from
-        //            // the `BaseEditorComponent` class, as it provides
-        //            // the component with the information needed to use the editor
-        //            // (hotInstance, row, col, prop, TD, originalValue, cellProperties)
-        //            Handsontable.vue.BaseEditorComponent.options.methods.prepare.call(this, row, col, prop, td, originalValue, cellProperties);
-
-        //            //if (!document.body.contains(this.$el)) {
-        //            //    document.body.appendChild(this.$el);
-        //            //}
-
-        //            $(this.$root).append(this.$el);
-
-
-        //            //console.log(this);
-
-        //            //const tdPosition = td.getBoundingClientRect();
-
-        //            ////// As the `prepare` method is triggered after selecting
-        //            ////// any cell, we're updating the styles for the editor element,
-        //            ////// so it shows up in the correct position.
-        //            //this.style.left = tdPosition.left + window.pageXOffset + 'px';
-        //            //this.style.top = tdPosition.top + window.pageYOffset + 'px';
-        //        },
-        //        setLowerCase: function () {
-        //            this.setValue(this.value.toLowerCase());
-        //            this.finishEditing();
-        //        },
-        //        setUpperCase: function () {
-        //            this.setValue(this.value.toUpperCase());
-        //            this.finishEditing();
-        //        },
-        //        open: function () {
-        //            this.isVisible = true;
-        //        },
-        //        close: function () {
-        //            this.isVisible = false;
-        //        },
-        //        setValue: function (value) {
-        //            this.value = value;
-        //        },
-        //        getValue: function () {
-        //            return this.value;
-        //        }
-        //    }
-        //};
-
-        const CustomRenderer = {
-            template: '<div class="text-danger">{{value}}</div>',
-            data: function () {
-                return {
-                    // We'll need to define properties in our data object,
-                    // corresponding to all of the data being injected from
-                    // the BaseEditorComponent class, which are:
-                    // - hotInstance (instance of Handsontable)
-                    // - row (row index)
-                    // - col (column index)
-                    // - prop (column property name)
-                    // - TD (the HTML cell element)
-                    // - cellProperties (the cellProperties object for the edited cell)
-                    hotInstance: null,
-                    TD: null,
-                    row: null,
-                    col: null,
-                    prop: null,
-                    value: null,
-                    cellProperties: null
-                }
-            },
-            watch: {
-                value: function (nv, ov) {
-                    console.log("value", nv, this.cellProperties);
-                }
+        // make customRenderer to display variable in table
+        var customRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+            Handsontable.renderers.TextRenderer.apply(this, arguments);
+            console.log(cellProperties.variable);
+            if (value != null && value != '') {
+                if (cellProperties.variable)
+                    $(td).html('<button class="btn btn-link p-0 var-btn" role="button" data-x-id="' + cellProperties.variable.variableId + '" data-toggle="modal" data-target="#exampleModal">' + cellProperties.variable.text + '</button>');
+            }
+            if (cellProperties.isTemplate) {
+                $(td).css('background-color', '#f8f8f8');
             }
         };
 
-        class CustomEditor extends Handsontable.editors.TextEditor {
-            constructor(props) {
-                super(props);
-            }
-            createElements() {
-                super.createElements();
-                this.TEXTAREA = document.createElement('input');
-                //this.TEXTAREA.setAttribute('placeholder', 'Custom placeholder');
-                this.TEXTAREA.setAttribute('class', 'cus-hot-input');
-                this.TEXTAREA.setAttribute('data-hot-input', true);
-                this.textareaStyle = this.TEXTAREA.style;
-                Handsontable.dom.empty(this.TEXTAREA_PARENT);
-                this.TEXTAREA_PARENT.appendChild(this.TEXTAREA);
-            }
-        }
-
-        $(document).bind('keyup change', '.cus-hot-input', function (event) {
-
-            app.isSuspense = true;
-            if ($(event.target).val().trim() != '')
-                app.inputFormula = $(event.target).val();
+        // on click variable open modal and add variable data to modal to edit
+        $(document).on('click', '.var-btn', function (e) {
+            console.log(e);
+            let variable = app.getVariableById($(this).data('x-id'));
+            app.varibleModal.text = variable.text;
+            app.varibleModal.formula = variable.formula;
         });
     </script>
 
@@ -277,69 +165,25 @@
         var app = new Vue({
             el: '#app',
             data: {
-                message: 'Hansontable!',
-                hotRef: null,
-                //hotData: Handsontable.helper.createSpreadsheetData(10, 10),
-                //hotDataCellData: [],
-                hotSettings: {
-                    startRows: 15,
-                    startCols: 15,
+                message: 'Hansontable! Demo1',
+                hotFormRef: null,
+                hotCellDataRef: null,
+                hotFormSettings: {
+                    startRows: 3,
+                    startCols: 3,
                     rowHeaders: true,
                     colHeaders: true,
                     contextMenu: true,
-                    dropdownMenu: true,
-                    formulas: true,
                     mergeCells: true,
-                    //colWidths: 100,
                     width: '100%',
-                    height: 420,
-                    //rowHeights: 23,
-                    outsideClickDeselects: false,
+                    height: 'auto',
+                    outsideClickDeselects: true,
                     manualColumnResize: true,
                     manualRowResize: true,
                     manualColumnMove: true,
                     manualRowMove: true,
-                    stretchH: 'all',
-                    editor: CustomEditor,
-                    //columns: [
-                    //    {
-                    //        type: 'autocomplete',
-                    //        source: ['Audi', 'BMW', 'Chrysler', 'Citroen', 'Mercedes', 'Nissan', 'Opel', 'Suzuki', 'Toyota', 'Volvo'],
-                    //        strict: false
-                    //    },
-                    //    {
-                    //        // 2nd cell is simple text, no special options here
-                    //        editor: CustomEditor
-                    //    },
-                    //    {
-                    //        type: 'date',
-                    //        dateFormat: 'MM/DD/YYYY',
-                    //        correctFormat: true,
-                    //        defaultDate: new Date(),
-                    //        // datePicker additional options (see https://github.com/dbushell/Pikaday#configuration)
-                    //        datePickerConfig: {
-                    //            // First day of the week (0: Sunday, 1: Monday, etc)
-                    //            firstDay: 0,
-                    //            showWeekNumber: true,
-                    //            //numberOfMonths: 3,
-                    //            disableDayFn: function (date) {
-                    //                // Disable Sunday and Saturday
-                    //                return date.getDay() === 0 || date.getDay() === 6;
-                    //            }
-                    //        }
-                    //    },
-                    //    {
-                    //        type: 'numeric',
-                    //        numericFormat: {
-                    //            pattern: '$ 0,0.00'
-                    //        }
-                    //    }
-                    //],
+                    stretchH: 'last',
                     contextMenu: {
-                        callback: function (key, selection, clickEvent) {
-                            // Common callback for all options
-                            //console.log(key, selection, clickEvent);
-                        },
                         items: {
                             'cut': {
                                 name: 'Cut'
@@ -362,22 +206,8 @@
                                 name: 'Delete column'
                             },
                             'separator_2': Handsontable.plugins.ContextMenu.SEPARATOR,
-                            'data_validation': {
-                                name: 'Data validation',
-                                callback: function () {
-                                    app.showModal = true;
-                                    if (app.activeCell.col != app.activeCell.col2 || app.activeCell.row != app.activeCell.row2) {
-                                        let letter = app.getCellColumnLetter(app.activeCell.col);
-                                        let letter2 = app.getCellColumnLetter(app.activeCell.col2);
-                                        app.cellRange = letter + (app.activeCell.row + 1) + ':' + letter2 + (app.activeCell.row2 + 1) ;
-                                    } else {
-                                        let letter = app.getCellColumnLetter(app.activeCell.col);
-                                        app.cellRange = letter + (app.activeCell.row + 1);
-                                    }
-                                    let cellMeta = app.hotRef.getCellMeta(app.activeCell.row, app.activeCell.col);
-                                    app.cellCriteriaValue = cellMeta.type;
-                                    
-                                }
+                            'alignment': {
+                                name: 'Alignment'
                             },
                             'separator_3': Handsontable.plugins.ContextMenu.SEPARATOR,
                             'mergeCells': {
@@ -387,188 +217,233 @@
                     },
                     licenseKey: 'non-commercial-and-evaluation'
                 },
-                hotCell: [
-                    //{ row: 0, col: 0, className: "htCenter htMiddle" },
-                ],
-                inputFormula: '',
-                activeCell: {
-                    row: 0, col: 0,
-                    row2: 0, col2: 0,
+                hotCellDataSettings: {
+                    data: [],
+                    rowHeaders: true,
+                    colHeaders: true,
+                    //contextMenu: true,
+                    mergeCells: true,
+                    width: 'auto',
+                    height: 'auto',
+                    readOnly: true,
+                    disableVisualSelection: true,
+                    stretchH: 'last',
+                    renderer: customRenderer,
+                    licenseKey: 'non-commercial-and-evaluation'
                 },
+                isFormTab: true,
                 dragEl: null,
                 variables: [
-                    { id: 1, tag: '!A' },
-                    { id: 2, tag: '!B' },
-                    { id: 3, tag: '!C' },
-                    { id: 4, tag: '!D' },
+                    {
+                        variableId: 1,
+                        text: "person",
+                        value: 5,
+                        formula: null,
+                        coords: []
+                    },
+                    {
+                        variableId: 4,
+                        text: "summary1",
+                        value: 10,
+                        formula: '=!1 + !2 + !3',
+                        coords: [],
+                    },
+                    {
+                        variableId: 5,
+                        text: "summaryall",
+                        value: 10,
+                        formula: '=SUM(!cash.1, !dep.1.1, ...)',
+                        coords: []
+                    }
                 ],
-                isFormTab: true,
-                isEditorOpen: false,
-                isSuspense: false,
-                showModal: false,
-                cellRange: '',
-                cellCriteriaValue: 'text',
-                cellCriterias: [
-                    { value: 'text', text: 'text' },
-                    { value: 'date', text: 'date' },
-                    { value: 'numeric', text: 'numeric' },
-                ],
-                parser: null
+                cellDataTab: {
+                    mouseOnCoords: null
+                },
+                cellMergeData: [],
+                varibleModal: {
+                    text: '',
+                    formValidates: [],
+                    formula: ''
+                }
             },
             mounted() {
                 this.initHotForm();
-
+                //this.initHotCellData();
                 this.initDragula();
-                this.initParser();
             },
             methods: {
+                cloneObj(obj) {
+                    return Object.assign({}, obj);
+                },
                 initHotForm() {
-                    this.hotRef = this.$refs.wrapper.hotInstance;
-                    //Handsontable.hooks.add('afterSetCellMeta', this.afterSetCellMeta, this.hotEl);
-                    Handsontable.hooks.add('afterBeginEditing', this.afterBeginEditing, this.hotRef);
-                    ////Handsontable.hooks.add('afterChange', this.afterChange, this.hotRef);
-                    Handsontable.hooks.add('afterSelection', this.afterSelection, this.hotRef);
-                    Handsontable.hooks.add('afterSetDataAtCell', this.afterSetDataAtCell, this.hotRef);
+                    const self = this;
+                    this.hotFormRef = this.$refs.formWrapper.hotInstance;
 
-                    this.hotRef.selectCell(this.activeCell.row, this.activeCell.col);
+                    Handsontable.hooks.add('afterMergeCells', this.afterMergeCells, this.hotFormRef);
+
+                    setTimeout(function () {
+                        self.hotFormRef.render();
+                        setTimeout(function () {
+                            self.hotFormRef.render();
+                        }, 5);
+                    }, 5);
+                },
+                initHotCellData(callback) {
+                    const self = this;
+                    this.hotCellDataRef = this.$refs.cellDataWrapper.hotInstance;
+
+                    Handsontable.hooks.add('afterOnCellMouseOver', this.afterOnCellMouseOver, this.hotCellDataRef);
+                    Handsontable.hooks.add('afterOnCellMouseOut', this.afterOnCellMouseOut, this.hotCellDataRef);
+
+                    setTimeout(function () {
+                        self.hotCellDataRef.render();
+                        setTimeout(function () {
+                            if (callback)
+                                callback();
+                            self.hotCellDataRef.render();
+                        }, 5);
+                    }, 5);
                 },
                 initDragula() {
-                    this.dragEl = dragula([document.querySelector('#variables')]).on('drag', function (el) {
-                        //alert('drag!');
-                    }).on('drop', function (el) {
-                        //console.log('drop', el);
-                        //$(el).remove();
-                    });
-                },
-                initParser() {
                     const self = this;
-                    this.parser = new formulaParser.Parser();
+                    this.dragEl = dragula([document.querySelector('#variables')], {
+                        moves: function (el, source, handle, sibling) {
+                            //console.log($(handle).hasClass('handle'));
+                            return $(handle).hasClass('handle'); // don't prevent any drags from initiating by default
+                        },
+                    })
+                        .on('cancel', function (el) {
+                            console.log('cancel', el);
 
-                    this.parser.on('callRangeValue', function (startCellCoord, endCellCoord, done) {
-                        done({
-                            row: startCellCoord.row.index, col: startCellCoord.column.index,
-                            row2: endCellCoord.row.index, col2: endCellCoord.column.index,
-                        });
-                    });
-
-                    this.parser.on('callCellValue', function (cellCoord, done) {
-                        done({
-                            row: cellCoord.row.index, col: cellCoord.column.index,
-                            row2: cellCoord.row.index, col2: cellCoord.column.index,
-                        });
-                    });
-
-                    //console.log(this.parser.parse('A1'));
-                    //console.log(this.parser.parse('A:A'));
+                            if (self.cellDataTab.mouseOnCoords != null && self.hotCellDataRef != null) {
+                                let isTemplate = self.hotCellDataRef.getCellMeta(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col).isTemplate;
+                                if (!isTemplate) {
+                                    let variable = self.getVariableById($(el).data('variable-id'));
+                                    let text = '!' + $(el).text().trim();
+                                    variable.coords.push({
+                                        row: self.cellDataTab.mouseOnCoords.row,
+                                        col: self.cellDataTab.mouseOnCoords.col,
+                                        cell: self.getCellLetter(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col)
+                                    });
+                                    self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, text, 'user drag from dragula');
+                                    self.hotCellDataRef.setCellMetaObject(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, { variable: variable });
+                                    self.hotCellDataRef.render();
+                                }
+                                self.cellDataTab.mouseOnCoords = null;
+                            }
+                        })
                 },
-                afterSetCellMeta(row, col, key, val) {
-                    //console.log("cell meta changed", row, col, key, val);
-                },
-                afterSelection(row, col, row2, col2, selectionLayerLevel) {
-                    this.activeCell.row = row;
-                    this.activeCell.col = col;
-                    this.activeCell.row2 = row2;
-                    this.activeCell.col2 = col2;
-                    //console.log(`afterSelection -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
-                    this.inputFormula = this.hotRef.getSourceDataAtCell(row, col);
-                    this.isEditorOpen = true;
-                },
-                afterChange(changes, source) {
-                    // [[row, prop, oldVal, newVal], ...]
-                    //console.log("afterChange", changes, source);
-                    //for (let change of changes) {
-                    //    if (change[0] == this.activeCell.row && change[1] == this.activeCell.col) {
-                    //        //this.inputFormula = change[3];
-                    //    }
-                    //}
-                    //this.activeCell.row = row;
-                    //this.activeCell.col = col;
-                    ////this.inputFormula = this.hotEl.getDataAtCell(row, col);
-                    //this.inputFormula = this.hotEl.getValue();
-                },
-                afterBeginEditing(row, col) {
-                    //console.log("afterBeginEditing", row, col);
-                    this.activeCell.row = row;
-                    this.activeCell.col = col;
-                    //console.log(`afterBeginEditing -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
-                    this.inputFormula = this.hotRef.getSourceDataAtCell(row, col);
-                    this.isEditorOpen = true;
-                },
-                inputFormulaEnter(event) {
-                    //console.log(event);
-                    $(event.target).blur();
-                    this.isEditorOpen = false;
-                    this.isSuspense = false;
-                    console.log(`inputFormulaEnter -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
-                    this.hotRef.setDataAtCell(this.activeCell.row, this.activeCell.col, this.inputFormula, 'user input enter!');
-
-                    // if move select down
-                    this.hotRef.selectCell(++this.activeCell.row, this.activeCell.col);
-
-                    this.$nextTick(function () {
-                        this.inputFormula = '';
-                    });
-                },
-                afterSetDataAtCell(changes, source) {
-                    //console.log('afterSetDataAtCell', changes);
-                    //this.hotRef.getPlugin('Formulas').recalculateOptimized();
-                    this.inputFormula = '';
-                },
-                changeTab(tab) {
-                    if (tab == 'form') {
-                        this.hotRef.selectCell(this.activeCell.row, this.activeCell.col);
-                    } else if (tab == 'cell-data') {
-                        const self = this;
-                        this.hotDataCellData = Object.assign([], this.hotData);
-                        this.hotRef.selectCell(this.activeCell.row, this.activeCell.col);
+                rerender(type) {
+                    const self = this;
+                    console.log('rerender!');
+                    if (type == 'form') {
+                        this.isFormTab = true;
+                        this.initHotForm();
+                    } else if (type == 'cell-data') {
                         this.isFormTab = false;
+                        let cellMetas = this.hotFormRef.getCellsMeta();
+                        let data = this.hotFormRef.getData();
+                        let colCount = this.hotFormRef.countVisibleCols();
+                        let rowCount = this.hotFormRef.countVisibleRows();
+                        let colWidths = [];
+                        for (let i = 0; i < colCount; i++) {
+                            colWidths.push(this.hotFormRef.getColWidth(i));
+                        }
+
+                        console.log(data, cellMetas, colWidths, colCount, rowCount);
+
+                        this.initHotCellData(function () {
+                            // set data from form sheet
+                            let cellDatas = self.hotCellDataRef.getData();
+                            if (cellDatas.length == 0) {
+                                self.hotCellDataRef.loadData(data);
+                            } else {
+                                for (let r = 0; r < rowCount; r++) {
+                                    for (let c = 0; c < colCount; c++) {
+                                        if (cellDatas[r][c] && !data[r][c]) {
+                                            data[r][c] = cellDatas[r][c];
+                                        }
+                                    }
+                                }
+                                self.hotCellDataRef.setDataAtCell(self.getCellDataSet(data));
+                            }
+
+                            // set column width from form sheet
+                            self.hotCellDataRef.updateSettings({
+                                colWidths: colWidths
+                            });
+                            // set class from form sheet
+                            for (let cell of cellMetas) {
+                                if (cell.className)
+                                    self.hotCellDataRef.setCellMeta(cell.row, cell.col, 'className', cell.className);
+                                if (self.hotFormRef.getDataAtCell(cell.row, cell.col) != null && self.hotFormRef.getDataAtCell(cell.row, cell.col) != '') {
+                                    self.hotCellDataRef.setCellMetaObject(cell.row, cell.col, { isTemplate: true });
+                                }
+                            }
+                            // set merge cell from form sheet
+                            for (let cell of self.cellMergeData) {
+                                self.hotCellDataRef.getPlugin('MergeCells').merge(cell.from.row, cell.from.col, cell.to.row, cell.to.col);
+                            }
+
+                            self.hotCellDataRef.render();
+
+                            delete data;
+                            delete colWidths;
+                            delete cellMetas;
+                        });
                     }
                 },
-                getDatas() {
-                    console.log(this.hotRef.getSourceData());
-                    console.log(this.hotRef.getCellsMeta());
+                afterOnCellMouseOver(event, coords, TD) {
+                    if (coords.row != -1 && coords.col != -1 && this.dragEl.dragging) {
+                        let isTemplate = this.hotCellDataRef.getCellMeta(coords.row, coords.col).isTemplate;
+                        if (!isTemplate) {
+                            if (TD.className != 'bg-warning') {
+                                TD.className = 'bg-warning';
+                                this.cellDataTab.mouseOnCoords = coords;
+                            }
+                        } else {
+                            this.cellDataTab.mouseOnCoords = null;
+                            TD.className = '';
+                        }
+                        //console.log('beforeOnCellMouseOver', this.cellDataTab.mouseOnCoords);
+                    } else {
+                        this.cellDataTab.mouseOnCoords = null;
+                        TD.className = '';
+                    }
                 },
-                setCellType() {
-                    this.showModal = false;
-                    //this.cellRange;
-                    let coord = this.parser.parse(this.cellRange).result;
-                    console.log(coord);
-                    for (var row = coord.row; row <= coord.row2; row++) {
-                        for (var col = coord.col; col <= coord.col2; col++) {
-                            this.hotRef.removeCellMeta(row, col, 'valid');
-                            this.hotRef.setCellMeta(row, col, 'type', this.cellCriteriaValue);
+                afterOnCellMouseOut(event, coords, TD) {
+                    this.cellDataTab.mouseOnCoords = null;
+                    TD.className = '';
+                },
+                getVariableById(variableId) {
+                    return this.cloneObj(this.variables[this.variables.findIndex(item => item.variableId == variableId)]);
+                },
+                test() {
+                    console.log(this.hotCellDataRef.getSourceData());
+                    console.log(this.hotCellDataRef.getCellsMeta());
+                },
+                afterMergeCells(cellRange, mergeParent, auto) {
+                    console.log('afterMergeCells', cellRange, mergeParent, auto);
+                    this.cellMergeData.push(cellRange);
+                },
+                isVariable(str) {
+                    return str[0] == '!';
+                },
+                getCellDataSet(rowCount, colCount, arr) {
+                    let list = [];
+                    for (let r = 0; r < rowCount; r++) {
+                        for (let c = 0; c < colCount; c++) {
+                            list.push([r, c, arr[r][c]]);
                         }
                     }
-                    this.hotRef.getPlugin('Formulas').recalculateOptimized();
-                    this.hotRef.render();
+                    return list;
                 },
-                removeCellType() {
-                    this.showModal = false;
-                    let coord = this.parser.parse(this.cellRange).result;
-                    this.hotRef.removeCellMeta(coord.row, coord.col, 'type');
-                    this.hotRef.removeCellMeta(coord.row, coord.col, 'valid');
-                    this.hotRef.getPlugin('Formulas').recalculateOptimized();
-                    this.hotRef.render();
-                },
-                getCellColumnLetter(col) {
-                    return (65 + col) > 90 ? String.fromCharCode(65 + col / 65) + String.fromCharCode(65 + col - 26) : String.fromCharCode(65 + col);
-                }
-            },
-            watch: {
-                inputFormula: function (nv, ov) {
-                    if (nv == '' || this.hotRef.isEmptyRow(this.activeCell.row) || this.hotRef.isEmptyCol(this.activeCell.col) || this.isSuspense) {
-                        this.isEditorOpen = false;
-                        return;
-                    }
-                    //console.log(`inputFormula -> row: ${this.activeCell.row}, col: ${this.activeCell.col} `);
-                    this.hotRef.setDataAtCell(this.activeCell.row, this.activeCell.col, nv, 'user input');
+                getCellLetter(row, col) {
+                    return ((65 + col) > 90 ? String.fromCharCode(65 + col / 65) + String.fromCharCode(65 + col - 26) : String.fromCharCode(65 + col)) + row;
                 }
             },
             components: {
-                HotTable: Handsontable.vue.HotTable,
-                HotColumn: Handsontable.vue.HotColumn,
-                //CustomRenderer,
-                //CustomEditor
+                HotTable: Handsontable.vue.HotTable
             },
         })
     </script>
