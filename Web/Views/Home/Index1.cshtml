@@ -75,7 +75,38 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    ...
+                    <div class="form-group">
+                        <label>ชื่อช่อง</label>
+                        <input type="text" v-model="varibleModal.text" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label>ตรวจสอบข้อมูล</label>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <select class="form-control">
+                                            <option value="value">text</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <select class="form-control">
+                                            <option value="value">text</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <button class="btn"><i class="fa fa-plus-circle"></i>&ensp;เพิ่มข้อมูล</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>สูตรการคำนวน</label>
+                        <textarea v-model="varibleModal.formula" class="form-control"></textarea>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -93,7 +124,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.css" />
 
     <style>
-        .is-readOnly{
+        .is-readOnly {
             border: 1px solid red;
         }
     </style>
@@ -113,12 +144,19 @@
             console.log(cellProperties.variable);
             if (value != null && value != '') {
                 if (cellProperties.variable)
-                    $(td).html('<button class="btn btn-link p-0" role="button" data-toggle="modal" data-target="#exampleModal">' + cellProperties.variable.text + '</button>');
+                    $(td).html('<button class="btn btn-link p-0 var-btn" role="button" data-x-id="' + cellProperties.variable.variableId + '" data-toggle="modal" data-target="#exampleModal">' + cellProperties.variable.text + '</button>');
             }
             if (cellProperties.isTemplate) {
                 $(td).css('background-color', '#f8f8f8');
             }
         };
+
+        $(document).on('click', '.var-btn', function (e) {
+            console.log(e);
+            let variable = app.getVariableById($(this).data('x-id'));
+            app.varibleModal.text = variable.text;
+            app.varibleModal.formula = variable.formula;
+        });
     </script>
 
     <script>
@@ -198,25 +236,33 @@
                         variableId: 1,
                         text: "person",
                         value: 5,
-                        formula: null
+                        formula: null,
+                        coords: []
                     },
                     {
                         variableId: 4,
                         text: "summary1",
                         value: 10,
-                        formula: '=!1 + !2 + !3'
+                        formula: '=!1 + !2 + !3',
+                        coords: [],
                     },
                     {
                         variableId: 5,
                         text: "summaryall",
                         value: 10,
-                        formula: '=SUM(!cash.1, !dep.1.1, ...)'
+                        formula: '=SUM(!cash.1, !dep.1.1, ...)',
+                        coords: []
                     }
                 ],
                 cellDataTab: {
                     mouseOnCoords: null
                 },
-                cellMergeData: []
+                cellMergeData: [],
+                varibleModal: {
+                    text: '',
+                    formValidates: [],
+                    formula: ''
+                }
             },
             mounted() {
                 this.initHotForm();
@@ -264,21 +310,26 @@
                             return $(handle).hasClass('handle'); // don't prevent any drags from initiating by default
                         },
                     })
-                    .on('cancel', function (el) {
-                        console.log('cancel', el);
+                        .on('cancel', function (el) {
+                            console.log('cancel', el);
 
-                        if (self.cellDataTab.mouseOnCoords != null && self.hotCellDataRef != null) {
-                            let isTemplate = self.hotCellDataRef.getCellMeta(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col).isTemplate;
-                            if (!isTemplate) {
-                                let variable = self.getVariableById($(el).data('variable-id'));
-                                let text = '!' + $(el).text().trim();
-                                self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, text, 'user drag from dragula');
-                                self.hotCellDataRef.setCellMetaObject(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, { variable: variable });
-                                self.hotCellDataRef.render();
+                            if (self.cellDataTab.mouseOnCoords != null && self.hotCellDataRef != null) {
+                                let isTemplate = self.hotCellDataRef.getCellMeta(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col).isTemplate;
+                                if (!isTemplate) {
+                                    let variable = self.getVariableById($(el).data('variable-id'));
+                                    let text = '!' + $(el).text().trim();
+                                    variable.coords.push({
+                                        row: self.cellDataTab.mouseOnCoords.row,
+                                        col: self.cellDataTab.mouseOnCoords.col,
+                                        cell: self.getCellLetter(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col)
+                                    });
+                                    self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, text, 'user drag from dragula');
+                                    self.hotCellDataRef.setCellMetaObject(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, { variable: variable });
+                                    self.hotCellDataRef.render();
+                                }
+                                self.cellDataTab.mouseOnCoords = null;
                             }
-                            self.cellDataTab.mouseOnCoords = null;
-                        }
-                    })
+                        })
                 },
                 rerender(type) {
                     const self = this;
@@ -296,7 +347,7 @@
                         for (let i = 0; i < colCount; i++) {
                             colWidths.push(this.hotFormRef.getColWidth(i));
                         }
-                        
+
                         console.log(data, cellMetas, colWidths, colCount, rowCount);
 
                         this.initHotCellData(function () {
@@ -314,7 +365,7 @@
                                 }
                                 self.hotCellDataRef.setDataAtCell(self.getCellDataSet(data));
                             }
-                            
+
                             // set column width from form sheet
                             self.hotCellDataRef.updateSettings({
                                 colWidths: colWidths
@@ -360,7 +411,7 @@
                 },
                 afterOnCellMouseOut(event, coords, TD) {
                     this.cellDataTab.mouseOnCoords = null;
-                    TD.className = '';x
+                    TD.className = '';
                 },
                 getVariableById(variableId) {
                     return this.cloneObj(this.variables[this.variables.findIndex(item => item.variableId == variableId)]);
@@ -384,6 +435,9 @@
                         }
                     }
                     return list;
+                },
+                getCellLetter(row, col) {
+                    return ((65 + col) > 90 ? String.fromCharCode(65 + col / 65) + String.fromCharCode(65 + col - 26) : String.fromCharCode(65 + col)) + row;
                 }
             },
             components: {
