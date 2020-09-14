@@ -76,9 +76,17 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>ชื่อช่อง</label>
+                        <label>ชื่อตัวแปร</label>
                         <input type="text" v-model="varibleModal.text" class="form-control" />
                     </div>
+                    <div class="form-group">
+                        <label>ประเภทข้อมูล</label>
+                        <select class="form-control" v-model="varibleModal.dataType">
+                            <option value="value">text</option>
+                        </select>
+                    </div>
+                    
+                    <hr />
                     <div class="form-group">
                         <label>ตรวจสอบข้อมูล</label>
                         <div class="row">
@@ -238,6 +246,7 @@
                         variableId: 1,
                         text: "person",
                         value: 5,
+                        dataType: 'text',
                         formula: null,
                         coords: []
                     },
@@ -245,6 +254,7 @@
                         variableId: 4,
                         text: "summary1",
                         value: 10,
+                        dataType: 'numeric',
                         formula: '=!1 + !2 + !3',
                         coords: [],
                     },
@@ -252,6 +262,7 @@
                         variableId: 5,
                         text: "summaryall",
                         value: 10,
+                        dataType: 'numeric',
                         formula: '=SUM(!cash.1, !dep.1.1, ...)',
                         coords: []
                     }
@@ -354,18 +365,18 @@
 
                         this.initHotCellData(function () {
                             // set data from form sheet
+                            self.hotCellDataRef.loadData(data);
                             let cellDatas = self.hotCellDataRef.getData();
-                            if (cellDatas.length == 0) {
-                                self.hotCellDataRef.loadData(data);
-                            } else {
+                            if (cellDatas.length != 0) {
                                 for (let r = 0; r < rowCount; r++) {
                                     for (let c = 0; c < colCount; c++) {
-                                        if (cellDatas[r][c] && !data[r][c]) {
+                                        if (cellDatas[r][c]) {
                                             data[r][c] = cellDatas[r][c];
                                         }
                                     }
                                 }
                                 self.hotCellDataRef.setDataAtCell(self.getCellDataSet(data));
+                                self.hotCellDataRef.render();
                             }
 
                             // set column width from form sheet
