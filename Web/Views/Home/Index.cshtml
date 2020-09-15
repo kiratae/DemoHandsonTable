@@ -155,13 +155,19 @@
         // make customRenderer to display variable in table
         var customRenderer = function (instance, td, row, col, prop, value, cellProperties) {
             Handsontable.renderers.TextRenderer.apply(this, arguments);
-            console.log(cellProperties.variable);
             if (value != null && value != '') {
                 if (cellProperties.variable)
                     $(td).html('<button class="btn btn-link p-0 var-btn" role="button" data-x-id="' + cellProperties.variable.variableId + '" data-toggle="modal" data-target="#exampleModal">' + cellProperties.variable.text + '</button>');
             }
             if (cellProperties.isTemplate) {
                 $(td).css('background-color', '#f8f8f8');
+            }
+        };
+
+        var customFormRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+            Handsontable.renderers.TextRenderer.apply(this, arguments);
+            if (value && value[0] == '!') {
+                $(td).html('');
             }
         };
 
@@ -174,6 +180,19 @@
             app.varibleModal.coords = variable.coords;
             app.varibleModal.formula = variable.formula;
         });
+
+        class Cell {
+            constructor(row, col) {
+                this.row = row;
+                this.col = col;
+
+                this.value = null;
+            }
+
+            setTemplate() {
+                this.isTemplate = true;
+            }
+        }
     </script>
 
     <script>
@@ -230,6 +249,7 @@
                             },
                         }
                     },
+                    renderer: customFormRenderer,
                     licenseKey: 'non-commercial-and-evaluation'
                 },
                 hotCellDataSettings: {
@@ -261,7 +281,7 @@
                         variableId: 4,
                         text: "summary1",
                         value: 10,
-                        dataType: 'numeric',
+                        dataType: 'numeric', 
                         formula: '=!1 + !2 + !3',
                         coords: [],
                     },
@@ -292,47 +312,33 @@
                 ],
                 // ----------- model -------------------
                 model: {
-                    formMeta: [],
-                    cell: [],
-                    cellMerge: []
+                    colWidths: [],
+                    rowHeights: [],
+                    datas: [],
+                    cells: [],
+                    mergedCells: []
                 }
             },
             mounted() {
                 this.initHotForm();
+                this.initHotCellData();
                 this.initDragula();
+                this.initModel();
             },
             methods: {
                 cloneObj(obj) {
                     return Object.assign({}, obj);
                 },
                 initHotForm() {
-                    const self = this;
                     this.hotFormRef = this.$refs.formWrapper.hotInstance;
 
                     Handsontable.hooks.add('afterMergeCells', this.afterMergeCells, this.hotFormRef);
-
-                    setTimeout(function () {
-                        self.hotFormRef.render();
-                        setTimeout(function () {
-                            self.hotFormRef.render();
-                        }, 5);
-                    }, 5);
                 },
-                initHotCellData(callback) {
-                    const self = this;
+                initHotCellData() {
                     this.hotCellDataRef = this.$refs.cellDataWrapper.hotInstance;
 
                     Handsontable.hooks.add('afterOnCellMouseOver', this.afterOnCellMouseOver, this.hotCellDataRef);
                     Handsontable.hooks.add('afterOnCellMouseOut', this.afterOnCellMouseOut, this.hotCellDataRef);
-
-                    setTimeout(function () {
-                        self.hotCellDataRef.render();
-                        setTimeout(function () {
-                            if (callback)
-                                callback();
-                            self.hotCellDataRef.render();
-                        }, 5);
-                    }, 5);
                 },
                 initDragula() {
                     const self = this;
@@ -374,64 +380,94 @@
                             }
                         })
                 },
-                rerender(type) {
-                    const self = this;
-                    console.log('rerender!');
-                    if (type == 'form') {
-                        this.isFormTab = true;
-                        this.initHotForm();
-                    } else if (type == 'cell-data') {
-                        this.isFormTab = false;
-                        let cellMetas = this.hotFormRef.getCellsMeta();
-                        let data = this.hotFormRef.getData();
-                        let colCount = this.hotFormRef.countVisibleCols();
-                        let rowCount = this.hotFormRef.countVisibleRows();
-                        let colWidths = [];
-                        for (let i = 0; i < colCount; i++) {
-                            colWidths.push(this.hotFormRef.getColWidth(i));
+                initModel() {
+                    // init cells
+                    for (let cell of this.hotFormRef.getCellsMeta()) {
+                        this.model.cells.push(new Cell(cell.row, cell.col));
+                    }
+                     // init data
+                    this.model.datas = this.getDatasFromCells(this.model.cells);
+                    // init colWiths
+                    for (let i = 0; i < this.hotFormRef.countVisibleCols(); i++) {
+                        this.model.colWidths.push(this.hotFormRef.getColWidth(i));
+                    }
+                    // init rowHeights
+                    for (let i = 0; i < this.hotFormRef.countVisibleRows(); i++) {
+                        this.model.rowHeights.push(this.hotFormRef.getRowHeight(i));
+                    }
+                    console.log('initModel', this.model);
+                },
+                updateHot(hotRef, model) {
+                    setTimeout(function () {
+
+                        // set data from form sheet
+                        hotRef.loadData(model.datas);
+
+                        // set class from form sheet
+                        for (let cell of model.cells) {
+                            hotRef.setCellMetaObject(cell.row, cell.col, cell);
                         }
 
-                        console.log(data, cellMetas, colWidths, colCount, rowCount);
 
-                        this.initHotCellData(function () {
-                            // set data from form sheet
-                            self.hotCellDataRef.loadData(data);
-                            let cellDatas = self.hotCellDataRef.getData();
-                            if (cellDatas.length != 0) {
-                                for (let r = 0; r < rowCount; r++) {
-                                    for (let c = 0; c < colCount; c++) {
-                                        if (cellDatas[r][c]) {
-                                            data[r][c] = cellDatas[r][c];
-                                        }
-                                    }
-                                }
-                                self.hotCellDataRef.setDataAtCell(self.getCellDataSet(data));
-                                self.hotCellDataRef.render();
-                            }
-
-                            // set column width from form sheet
-                            self.hotCellDataRef.updateSettings({
-                                colWidths: colWidths
-                            });
-                            // set class from form sheet
-                            for (let cell of cellMetas) {
-                                if (cell.className)
-                                    self.hotCellDataRef.setCellMeta(cell.row, cell.col, 'className', cell.className);
-                                if (self.hotFormRef.getDataAtCell(cell.row, cell.col) != null && self.hotFormRef.getDataAtCell(cell.row, cell.col) != '') {
-                                    self.hotCellDataRef.setCellMetaObject(cell.row, cell.col, { isTemplate: true });
-                                }
-                            }
-                            // set merge cell from form sheet
-                            for (let cell of self.cellMergeData) {
-                                self.hotCellDataRef.getPlugin('MergeCells').merge(cell.from.row, cell.from.col, cell.to.row, cell.to.col);
-                            }
-
-                            self.hotCellDataRef.render();
-
-                            delete data;
-                            delete colWidths;
-                            delete cellMetas;
+                        // set column width from form sheet
+                        hotRef.updateSettings({
+                            colWidths: model.colWidths,
+                            rowHeights: model.rowHeights,
                         });
+
+                        // set merge cell from form sheet
+                        for (let cell of model.mergedCells) {
+                            console.log('MergeCells', cell);
+                            hotRef.getPlugin('MergeCells').merge(cell.from.row, cell.from.col, cell.to.row, cell.to.col);
+                        }
+
+                        hotRef.render();
+
+                        console.log('updateHot');
+                    }, 5);
+                },
+                updateModel(hotRef, isTemplate = true) {
+                    // set cells
+                    for (let cell of this.model.cells) {
+                        if (!this.stringIsNullOrEmpty(hotRef.getDataAtCell(cell.row, cell.col))) {
+                            cell.value = hotRef.getDataAtCell(cell.row, cell.col);
+                        }
+                        if (!this.stringIsNullOrEmpty(cell.value)) {
+                            if (!this.isVariable(cell.value)) {
+                                cell.setTemplate();
+                            }
+                        }
+                        let cellMeta = hotRef.getCellMeta(cell.row, cell.col);
+                        console.log('updateModel', cell.className, cellMeta.className, typeof cellMeta.className !== 'undefined');
+                        if (typeof cellMeta.variable !== 'undefined') {
+                            cell.variable = cellMeta.variable;
+                        }
+                        if (typeof cellMeta.className !== 'undefined') {
+                            cell.className = cellMeta.className;
+                        }
+                    }
+                    // set data
+                    this.model.datas = this.getDatasFromCells(this.model.cells);
+                    //// set colWiths
+                    //for (let i = 0; i < hotRef.countVisibleCols(); i++) {
+                    //    this.model.colWidths.push(hotRef.getColWidth(i));
+                    //}
+                    //// set rowHeights
+                    //for (let i = 0; i < hotRef.countVisibleRows(); i++) {
+                    //    this.model.rowHeights.push(hotRef.getRowHeight(i));
+                    //}
+                    console.log('updateModel', this.model);
+                },
+                rerender(type) {
+                    console.log('rerender to -> ' + type);
+                    if (type == 'form') {
+                        this.isFormTab = true;
+                        this.updateModel(this.hotCellDataRef);
+                        this.updateHot(this.hotFormRef, this.model);
+                    } else if (type == 'cell-data') {
+                        this.isFormTab = false;
+                        this.updateModel(this.hotFormRef);
+                        this.updateHot(this.hotCellDataRef, this.model, false);
                     }
                 },
                 afterOnCellMouseOver(event, coords, TD) {
@@ -465,7 +501,11 @@
                 },
                 afterMergeCells(cellRange, mergeParent, auto) {
                     console.log('afterMergeCells', cellRange, mergeParent, auto);
-                    this.cellMergeData.push(cellRange);
+                    if (!this.model.mergedCells.includes(cellRange))
+                        this.model.mergedCells.push(cellRange);
+                },
+                stringIsNullOrEmpty(str) {
+                    return str === null || str === '' || typeof str === 'undefined';
                 },
                 isVariable(str) {
                     return str[0] == '!';
@@ -481,6 +521,22 @@
                 },
                 getCellLetter(row, col) {
                     return ((65 + col) > 90 ? String.fromCharCode(65 + col / 65) + String.fromCharCode(65 + col - 26) : String.fromCharCode(65 + col)) + row;
+                },
+                getDatasFromCells(cells) {
+                    let datas = [], rowTemp = -1;
+                    for (let cell of cells) {
+                        if (rowTemp != cell.row) {
+                            rowTemp = cell.row;
+                            datas.push([]);
+                            datas[cell.row].push(cell.value);
+                        } else {
+                            datas[cell.row].push(cell.value);
+                        }
+                    }
+                    return datas;
+                },
+                serealizeModel() {
+
                 }
             },
             components: {
