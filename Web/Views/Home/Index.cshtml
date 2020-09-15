@@ -82,10 +82,15 @@
                     <div class="form-group">
                         <label>ประเภทข้อมูล</label>
                         <select class="form-control" v-model="varibleModal.dataType">
-                            <option value="value">text</option>
+                            <option :value="dataType.value" v-for="dataType in mdDataTypes">{{ dataType.text }}</option>
                         </select>
                     </div>
-                    
+                    <div class="form-group">
+                        <label>เลือกเซลแสดงผล</label>
+                        <div class="form-control">
+                            <span v-for="crood in varibleModal.coords" class="badge badge-secondary mx-1">{{ crood.cell }}</span>
+                        </div>
+                    </div>
                     <hr />
                     <div class="form-group">
                         <label>ตรวจสอบข้อมูล</label>
@@ -165,6 +170,8 @@
             console.log(e);
             let variable = app.getVariableById($(this).data('x-id'));
             app.varibleModal.text = variable.text;
+            app.varibleModal.dataType = variable.dataType;
+            app.varibleModal.coords = variable.coords;
             app.varibleModal.formula = variable.formula;
         });
     </script>
@@ -273,13 +280,25 @@
                 cellMergeData: [],
                 varibleModal: {
                     text: '',
+                    dataType: '',
+                    coords: [],
                     formValidates: [],
                     formula: ''
+                },
+                mdDataTypes: [
+                    { value: 'text', text: 'text' },
+                    { value: 'numeric', text: 'numeric' },
+                    { value: 'date', text: 'date' },
+                ],
+                // ----------- model -------------------
+                model: {
+                    formMeta: [],
+                    cell: [],
+                    cellMerge: []
                 }
             },
             mounted() {
                 this.initHotForm();
-                //this.initHotCellData();
                 this.initDragula();
             },
             methods: {
@@ -336,6 +355,17 @@
                                         col: self.cellDataTab.mouseOnCoords.col,
                                         cell: self.getCellLetter(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col)
                                     });
+                                    if (variable.coords.length > 1) {
+                                        variable.coords.sort(function (a, b) {
+                                            if (a.cell < b.cell) {
+                                                return -1;
+                                            }
+                                            if (a.cell > b.cell) {
+                                                return 1;
+                                            }
+                                            return 0;
+                                        })
+                                    }
                                     self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, text, 'user drag from dragula');
                                     self.hotCellDataRef.setCellMetaObject(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, { variable: variable });
                                     self.hotCellDataRef.render();
