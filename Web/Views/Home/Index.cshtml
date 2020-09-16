@@ -23,7 +23,7 @@
                     <div class="card">
                         <div class="card-body">
 
-                            <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 100%; overflow: hidden; width: 100%;">
+                            <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 100%; overflow: hidden; width: 100%; position: relative;">
                                 <hot-table ref="formWrapper" :settings="hotFormSettings"></hot-table>
                             </div>
 
@@ -35,7 +35,7 @@
 
                     <div class="card">
                         <div class="card-body">
-                            <div class="hot handsontable htRowHeaders htColumnHeaders" id="cellDataSheet" style="height: 100%; overflow: hidden; width: 100%;">
+                            <div class="hot handsontable htRowHeaders htColumnHeaders" id="cellDataSheet" style="height: 100%; overflow: hidden; width: 100%; position: relative;">
                                 <hot-table ref="cellDataWrapper" :settings="hotCellDataSettings"></hot-table>
                             </div>
                         </div>
@@ -157,7 +157,7 @@
             Handsontable.renderers.TextRenderer.apply(this, arguments);
             if (value != null && value != '') {
                 if (cellProperties.variable)
-                    $(td).html('<button class="btn btn-link p-0 var-btn" role="button" data-x-id="' + cellProperties.variable.variableId + '" data-toggle="modal" data-target="#exampleModal">' + cellProperties.variable.text + '</button>');
+                    $(td).html('<a class="btn btn-link p-0 var-btn" href="#" role="button" data-x-id="' + cellProperties.variable.variableId + '" data-toggle="modal" data-target="#exampleModal">' + cellProperties.variable.text + '</a>');
             }
             if (cellProperties.isTemplate) {
                 $(td).css('background-color', '#f8f8f8');
@@ -216,6 +216,7 @@
                     manualRowResize: true,
                     manualColumnMove: true,
                     manualRowMove: true,
+                    autoRowSize: true,
                     stretchH: 'last',
                     contextMenu: {
                         items: {
@@ -256,12 +257,12 @@
                     data: [],
                     rowHeaders: true,
                     colHeaders: true,
-                    //contextMenu: true,
                     mergeCells: true,
-                    width: 'auto',
+                    width: '100%',
                     height: 'auto',
                     readOnly: true,
                     disableVisualSelection: true,
+                    autoRowSize: true,
                     stretchH: 'last',
                     renderer: customRenderer,
                     licenseKey: 'non-commercial-and-evaluation'
@@ -333,6 +334,10 @@
                     this.hotFormRef = this.$refs.formWrapper.hotInstance;
 
                     Handsontable.hooks.add('afterMergeCells', this.afterMergeCells, this.hotFormRef);
+                    Handsontable.hooks.add('afterColumnResize', this.afterColumnResize, this.hotFormRef);
+                    Handsontable.hooks.add('afterRowResize', this.afterRowResize, this.hotFormRef);
+                    Handsontable.hooks.add('afterCreateCol', this.afterCreateCol, this.hotFormRef);
+                    Handsontable.hooks.add('afterCreateRow', this.afterCreateRow, this.hotFormRef);
                 },
                 initHotCellData() {
                     this.hotCellDataRef = this.$refs.cellDataWrapper.hotInstance;
@@ -382,52 +387,54 @@
                 },
                 initModel() {
                     // init cells
+                    this.model.cells.splice(0, this.model.cells.length);
                     for (let cell of this.hotFormRef.getCellsMeta()) {
                         this.model.cells.push(new Cell(cell.row, cell.col));
                     }
+                    this.model.cells = this.sortCells(this.model.cells);
                      // init data
                     this.model.datas = this.getDatasFromCells(this.model.cells);
                     // init colWiths
+                    this.model.colWidths.splice(0, this.model.colWidths.length);
                     for (let i = 0; i < this.hotFormRef.countVisibleCols(); i++) {
                         this.model.colWidths.push(this.hotFormRef.getColWidth(i));
                     }
                     // init rowHeights
+                    this.model.rowHeights.splice(0, this.model.rowHeights.length);
                     for (let i = 0; i < this.hotFormRef.countVisibleRows(); i++) {
-                        console.log('initModel', this.hotFormRef.getRowHeight(i), i);
                         this.model.rowHeights.push(this.hotFormRef.getRowHeight(i));
                     }
                     console.log('initModel', this.model);
                 },
-                updateHot(hotRef, model) {
+                updateHot: function (hotRef, model) {
                     setTimeout(function () {
+                        hotRef.render();
 
                         // set data from form sheet
                         hotRef.loadData(model.datas);
+
+                        // set column width from form sheet
+                        hotRef.updateSettings({
+                            colWidths: model.colWidths,
+                            rowHeights: model.rowHeights,
+                        });
+                        hotRef.render();
 
                         // set class from form sheet
                         for (let cell of model.cells) {
                             hotRef.setCellMetaObject(cell.row, cell.col, cell);
                         }
-                        hotRef.render();
-
-                        // set column width from form sheet
-                        hotRef.updateSettings({
-                            colWidths: model.colWidths,
-                            //rowHeights: model.rowHeights,
-                        });
 
                         // set merge cell from form sheet
                         for (let cell of model.mergedCells) {
-                            console.log('MergeCells', cell);
                             hotRef.getPlugin('MergeCells').merge(cell.from.row, cell.from.col, cell.to.row, cell.to.col);
                         }
-
                         hotRef.render();
 
                         console.log('updateHot');
                     }, 5);
                 },
-                updateModel(hotRef, isTemplate = true) {
+                updateModel: function (hotRef) {
                     // set cells
                     for (let cell of this.model.cells) {
                         if (!this.stringIsNullOrEmpty(hotRef.getDataAtCell(cell.row, cell.col))) {
@@ -439,34 +446,29 @@
                             }
                         }
                         let cellMeta = hotRef.getCellMeta(cell.row, cell.col);
-                        console.log('updateModel', cell.className, cellMeta.className, typeof cellMeta.className !== 'undefined');
                         if (typeof cellMeta.variable !== 'undefined') {
                             cell.variable = cellMeta.variable;
                         }
                         if (typeof cellMeta.className !== 'undefined') {
                             cell.className = cellMeta.className;
                         }
+                        console.log('updateModel', cell);
                     }
                     // set data
                     this.model.datas = this.getDatasFromCells(this.model.cells);
-                    //// set colWiths
-                    //for (let i = 0; i < hotRef.countVisibleCols(); i++) {
-                    //    this.model.colWidths.push(hotRef.getColWidth(i));
-                    //}
-                    //// set rowHeights
-                    //for (let i = 0; i < hotRef.countVisibleRows(); i++) {
-                    //    this.model.rowHeights.push(hotRef.getRowHeight(i));
-                    //}
+
                     console.log('updateModel', this.model);
                 },
-                rerender(type) {
+                rerender: function (type) {
                     console.log('rerender to -> ' + type);
                     if (type == 'form') {
                         this.isFormTab = true;
+
                         this.updateModel(this.hotCellDataRef);
                         this.updateHot(this.hotFormRef, this.model);
                     } else if (type == 'cell-data') {
                         this.isFormTab = false;
+
                         this.updateModel(this.hotFormRef);
                         this.updateHot(this.hotCellDataRef, this.model, false);
                     }
@@ -492,6 +494,46 @@
                 afterOnCellMouseOut(event, coords, TD) {
                     this.cellDataTab.mouseOnCoords = null;
                     TD.className = '';
+                },
+                afterColumnResize(newSize, column, isDoubleClick) {
+                    this.model.colWidths[column] = newSize;
+                },
+                afterRowResize(newSize, row, isDoubleClick) {
+                    this.model.rowHeights[row] = newSize;
+                },
+                afterCreateCol(index, amount, source) {
+                    this.hotFormRef.render();
+                    console.log('afterCreateCol', index, amount, source);
+                    // init cells
+                    this.model.cells.splice(0, this.model.cells.length);
+                    for (let cell of this.hotFormRef.getCellsMeta()) {
+                        this.model.cells.push(new Cell(cell.row, cell.col));
+                    }
+                    this.model.cells = this.sortCells(this.model.cells);
+                    // init data
+                    this.model.datas = this.getDatasFromCells(this.model.cells);
+                    // init colWiths
+                    this.model.colWidths.splice(0, this.model.colWidths.length);
+                    for (let i = 0; i < this.hotFormRef.countVisibleCols(); i++) {
+                        this.model.colWidths.push(this.hotFormRef.getColWidth(i));
+                    }
+                },
+                afterCreateRow(index, amount, source) {
+                    this.hotFormRef.render();
+                    console.log('afterCreateRow', index, amount, source);
+                    // init cells
+                    this.model.cells.splice(0, this.model.cells.length);
+                    for (let cell of this.hotFormRef.getCellsMeta()) {
+                        this.model.cells.push(new Cell(cell.row, cell.col));
+                    }
+                    this.model.cells = this.sortCells(this.model.cells);
+                    // init data
+                    this.model.datas = this.getDatasFromCells(this.model.cells);
+                    // init rowHeights
+                    this.model.rowHeights.splice(0, this.model.rowHeights.length);
+                    for (let i = 0; i < this.hotFormRef.countVisibleRows(); i++) {
+                        this.model.rowHeights.push(this.hotFormRef.getRowHeight(i));
+                    }
                 },
                 getVariableById(variableId) {
                     return this.cloneObj(this.variables[this.variables.findIndex(item => item.variableId == variableId)]);
@@ -535,6 +577,18 @@
                         }
                     }
                     return datas;
+                },
+                sortCells(cells) {
+                    return cells
+                        .sort(function (a, b) {
+                            if (a.row < b.row) {
+                                return -1;
+                            }
+                            if (a.row > b.row) {
+                                return 1;
+                            }
+                            return 0;
+                        });
                 },
                 serealizeModel() {
 
