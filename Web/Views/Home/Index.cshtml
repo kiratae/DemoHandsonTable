@@ -393,6 +393,7 @@
                     }
                     // init rowHeights
                     for (let i = 0; i < this.hotFormRef.countVisibleRows(); i++) {
+                        console.log('initModel', this.hotFormRef.getRowHeight(i), i);
                         this.model.rowHeights.push(this.hotFormRef.getRowHeight(i));
                     }
                     console.log('initModel', this.model);
@@ -407,12 +408,12 @@
                         for (let cell of model.cells) {
                             hotRef.setCellMetaObject(cell.row, cell.col, cell);
                         }
-
+                        hotRef.render();
 
                         // set column width from form sheet
                         hotRef.updateSettings({
                             colWidths: model.colWidths,
-                            rowHeights: model.rowHeights,
+                            //rowHeights: model.rowHeights,
                         });
 
                         // set merge cell from form sheet
