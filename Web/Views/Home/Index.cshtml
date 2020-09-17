@@ -133,7 +133,6 @@
 
 @section Head {
     <link rel="stylesheet" href="~/lib/handsontable/handsontable.full.css" />
-    <link rel="stylesheet" href="~/lib/dragula/dragula.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.css" />
 
     <style>
@@ -331,7 +330,6 @@
                 this.initDB(() => {
                     self.db.run("CREATE TABLE form (formId, code, name, data);");
                     self.initModel();
-                    console.log(self.getModelList());
                 });
 
                 setTimeout(() => {
@@ -441,7 +439,8 @@
                         this.model.rowHeights.push(this.hotFormRef.getRowHeight(i));
                     }
                     console.log('initModel', this.model);
-                    self.db.run("INSERT INTO form VALUES (?,?)", [1, 'A', 'Form A', JSON.stringify(this.model)]);
+                    this.db.run("INSERT INTO form VALUES (?,?,?,?)", [1, 'A', 'Form A', JSON.stringify(this.model)]);
+                    console.log(this.getModelList());
                 },
                 updateHot: function (hotRef, model) {
                     setTimeout(function () {
@@ -514,23 +513,23 @@
                     if (coords.row != -1 && coords.col != -1 && this.dragEl.dragging) {
                         let isTemplate = this.hotCellDataRef.getCellMeta(coords.row, coords.col).isTemplate;
                         if (!isTemplate) {
-                            if (TD.className != 'bg-warning') {
-                                TD.className = 'bg-warning';
+                            if (!$(TD).hasClass('bg-warning')) {
+                                $(TD).addClass('bg-warning');
                                 this.cellDataTab.mouseOnCoords = coords;
                             }
                         } else {
                             this.cellDataTab.mouseOnCoords = null;
-                            TD.className = '';
+                            $(TD).removeClass('bg-warning');
                         }
                         //console.log('beforeOnCellMouseOver', this.cellDataTab.mouseOnCoords);
                     } else {
                         this.cellDataTab.mouseOnCoords = null;
-                        TD.className = '';
+                        $(TD).removeClass('bg-warning');
                     }
                 },
                 afterOnCellMouseOut(event, coords, TD) {
                     this.cellDataTab.mouseOnCoords = null;
-                    TD.className = '';
+                    $(TD).removeClass('bg-warning');
                 },
                 afterColumnResize(newSize, column, isDoubleClick) {
                     this.model.colWidths[column] = newSize;
@@ -633,7 +632,7 @@
                 getModel: async () => {
 
                 },
-                getModelList: async () => {
+                getModelList() {
                     let stmt = this.db.prepare("SELECT * FROM form");
                     let list = [];
                     while (stmt.step()) {
