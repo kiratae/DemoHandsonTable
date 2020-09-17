@@ -150,6 +150,7 @@
     <script src="~/lib/handsontable/vue/dist/vue-handsontable.js"></script>
     <script src="~/lib/dragula/dragula.js"></script>
     <script src="~/lib/formula-parser/formula-parser.js"></script>
+    <script src='~/lib/sql.js/dist/sql-wasm.js'></script>
 
     <script>
         // make customRenderer to display variable in table
@@ -282,7 +283,7 @@
                         variableId: 4,
                         text: "summary1",
                         value: 10,
-                        dataType: 'numeric', 
+                        dataType: 'numeric',
                         formula: '=!1 + !2 + !3',
                         coords: [],
                     },
@@ -318,13 +319,35 @@
                     datas: [],
                     cells: [],
                     mergedCells: []
-                }
+                },
+                // ----------- db -------------------
+                db: null
             },
             mounted() {
+                const self = this;
                 this.initHotForm();
                 this.initHotCellData();
                 this.initDragula();
-                this.initModel();
+                this.initDB(() => {
+                    self.db.run("CREATE TABLE form (formId, code, name, data);");
+                    self.initModel();
+                    console.log(self.getModelList());
+                });
+
+                setTimeout(() => {
+                    this.db.run("CREATE TABLE test (col1, col2);");
+                    this.db.run("INSERT INTO test VALUES (?,?), (?,?)", [1, 111, 2, 222]);
+                    // Prepare a statement
+                    var stmt = this.db.prepare("SELECT * FROM test WHERE col1 BETWEEN $start AND $end");
+                    stmt.getAsObject({ $start: 1, $end: 1 }); // {col1:1, col2:111}
+
+                    // Bind new values
+                    stmt.bind({ $start: 1, $end: 2 });
+                    while (stmt.step()) { //
+                        var row = stmt.getAsObject();
+                        console.log('Here is a row: ' + JSON.stringify(row));
+                    }
+                }, 1000);
             },
             methods: {
                 cloneObj(obj) {
@@ -385,6 +408,19 @@
                             }
                         })
                 },
+                initDB(callback) {
+                    const self = this;
+
+                    config = {
+                        locateFile: filename => `/lib/sql.js/dist/${filename}`
+                    }
+                    initSqlJs(config).then(function (SQL) {
+                        self.db = new SQL.Database();
+
+                        if (callback)
+                            callback();
+                    });
+                },
                 initModel() {
                     // init cells
                     this.model.cells.splice(0, this.model.cells.length);
@@ -392,7 +428,7 @@
                         this.model.cells.push(new Cell(cell.row, cell.col));
                     }
                     this.model.cells = this.sortCells(this.model.cells);
-                     // init data
+                    // init data
                     this.model.datas = this.getDatasFromCells(this.model.cells);
                     // init colWiths
                     this.model.colWidths.splice(0, this.model.colWidths.length);
@@ -405,6 +441,7 @@
                         this.model.rowHeights.push(this.hotFormRef.getRowHeight(i));
                     }
                     console.log('initModel', this.model);
+                    self.db.run("INSERT INTO form VALUES (?,?)", [1, 'A', 'Form A', JSON.stringify(this.model)]);
                 },
                 updateHot: function (hotRef, model) {
                     setTimeout(function () {
@@ -590,8 +627,19 @@
                             return 0;
                         });
                 },
-                serealizeModel() {
+                saveModel: async () => {
+                    this.db
+                },
+                getModel: async () => {
 
+                },
+                getModelList: async () => {
+                    let stmt = this.db.prepare("SELECT * FROM form");
+                    let list = [];
+                    while (stmt.step()) {
+                        list.push(stmt.getAsObject());
+                    }
+                    return list;
                 }
             },
             components: {

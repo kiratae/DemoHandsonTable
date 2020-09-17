@@ -31,6 +31,10 @@
       "provider": "jsdelivr",
       "library": "hyperformula@0.1.3",
       "destination": "wwwroot/lib/hyperformula/"
+    },
+    {
+      "library": "sql.js@1.3.0",
+      "destination": "wwwroot/lib/sql.js/"
     }
   ]
 }
