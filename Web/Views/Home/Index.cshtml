@@ -23,7 +23,7 @@
                     <div class="card">
                         <div class="card-body">
 
-                            <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 100%; overflow: hidden; width: 100%; position: relative;">
+                            <div class="hot handsontable htRowHeaders htColumnHeaders" style="height: 420px; overflow: hidden; width: 100%;" data-originalstyle="height: 420px; overflow: hidden; width: 100%;">
                                 <hot-table ref="formWrapper" :settings="hotFormSettings"></hot-table>
                             </div>
 
@@ -35,7 +35,7 @@
 
                     <div class="card">
                         <div class="card-body">
-                            <div class="hot handsontable htRowHeaders htColumnHeaders" id="cellDataSheet" style="height: 100%; overflow: hidden; width: 100%; position: relative;">
+                            <div class="hot handsontable htRowHeaders htColumnHeaders" id="cellDataSheet" style="height: 420px; overflow: hidden; width: 100%;" data-originalstyle="height: 420px; overflow: hidden; width: 100%;">
                                 <hot-table ref="cellDataWrapper" :settings="hotCellDataSettings"></hot-table>
                             </div>
                         </div>
@@ -62,6 +62,10 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="d-flex justify-content-center mt-3" v-if="db">
+        <button class="btn btn-primary btn-block" type="button" v-on:click="saveModel">Save</button>
     </div>
 
     <!-- Modal -->
@@ -182,16 +186,44 @@
         });
 
         class Cell {
-            constructor(row, col) {
-                this.row = row;
-                this.col = col;
+            constructor(options) {
+                if (typeof options.row === 'undefined' || typeof options.col === 'undefined') {
+                    console.error('class Cell row or col is missing!');
+                    return;
+                }
+                this.row = options.row;
+                this.col = options.col;
 
-                this.value = null;
+                this.value = options.value || null;
+
+                if (options.className)
+                    this.className = options.className;
+                if (options.isTemplate)
+                    this.isTemplate = options.isTemplate;
+                if (options.variable)
+                    this.variable = options.variable;
             }
 
             setTemplate() {
                 this.isTemplate = true;
             }
+        }
+
+        function toBinArray(str) {
+            var l = str.length,
+                arr = new Uint8Array(l);
+            for (var i = 0; i < l; i++) arr[i] = str.charCodeAt(i);
+            return arr;
+        }
+
+        function toBinString(arr) {
+            var uarr = new Uint8Array(arr);
+            var strings = [], chunksize = 0xffff;
+            // There is a maximum stack size. We cannot call String.fromCharCode with as many arguments as we want
+            for (var i = 0; i * chunksize < uarr.length; i++) {
+                strings.push(String.fromCharCode.apply(null, uarr.subarray(i * chunksize, (i + 1) * chunksize)));
+            }
+            return strings.join('');
         }
     </script>
 
@@ -203,21 +235,21 @@
                 hotFormRef: null,
                 hotCellDataRef: null,
                 hotFormSettings: {
-                    startRows: 3,
-                    startCols: 3,
+                    startRows: 3, // 30
+                    startCols: 3, // 26
                     rowHeaders: true,
                     colHeaders: true,
                     contextMenu: true,
                     mergeCells: true,
                     width: '100%',
-                    height: 'auto',
+                    height: 420,
                     outsideClickDeselects: true,
                     manualColumnResize: true,
                     manualRowResize: true,
-                    manualColumnMove: true,
-                    manualRowMove: true,
+                    //manualColumnMove: true,
+                    //manualRowMove: true,
                     autoRowSize: true,
-                    stretchH: 'last',
+                    //stretchH: 'all',
                     contextMenu: {
                         items: {
                             'cut': {
@@ -259,11 +291,11 @@
                     colHeaders: true,
                     mergeCells: true,
                     width: '100%',
-                    height: 'auto',
+                    height: 420,
                     readOnly: true,
                     disableVisualSelection: true,
                     autoRowSize: true,
-                    stretchH: 'last',
+                    stretchH: 'all',
                     renderer: customRenderer,
                     licenseKey: 'non-commercial-and-evaluation'
                 },
@@ -313,9 +345,9 @@
                 ],
                 // ----------- model -------------------
                 model: {
+                    formId: 1,
                     colWidths: [],
                     rowHeights: [],
-                    datas: [],
                     cells: [],
                     mergedCells: []
                 },
@@ -327,25 +359,15 @@
                 this.initHotForm();
                 this.initHotCellData();
                 this.initDragula();
-                this.initDB(() => {
-                    self.db.run("CREATE TABLE form (formId, code, name, data);");
-                    self.initModel();
-                });
-
-                setTimeout(() => {
-                    this.db.run("CREATE TABLE test (col1, col2);");
-                    this.db.run("INSERT INTO test VALUES (?,?), (?,?)", [1, 111, 2, 222]);
-                    // Prepare a statement
-                    var stmt = this.db.prepare("SELECT * FROM test WHERE col1 BETWEEN $start AND $end");
-                    stmt.getAsObject({ $start: 1, $end: 1 }); // {col1:1, col2:111}
-
-                    // Bind new values
-                    stmt.bind({ $start: 1, $end: 2 });
-                    while (stmt.step()) { //
-                        var row = stmt.getAsObject();
-                        console.log('Here is a row: ' + JSON.stringify(row));
+                this.initDB(
+                    () => {
+                        self.initModel();
+                    },
+                    () => {
+                        self.deserializeModel(self.getModel());
+                        self.updateHot(self.hotFormRef, self.model);
                     }
-                }, 1000);
+                );
             },
             methods: {
                 cloneObj(obj) {
@@ -406,28 +428,35 @@
                             }
                         })
                 },
-                initDB(callback) {
+                initDB(initCallback, updateCallback) {
                     const self = this;
 
                     config = {
                         locateFile: filename => `/lib/sql.js/dist/${filename}`
                     }
                     initSqlJs(config).then(function (SQL) {
-                        self.db = new SQL.Database();
+                        var dbstr = window.localStorage.getItem("form.sqlite");
+                        if (dbstr) {
+                            self.db = new SQL.Database(toBinArray(dbstr));
 
-                        if (callback)
-                            callback();
+                            if (updateCallback)
+                                updateCallback();
+                        } else {
+                            self.db = new SQL.Database();
+                            self.db.run("CREATE TABLE form (formId INTEGER PRIMARY KEY, code, name, data);");
+
+                            if (initCallback)
+                                initCallback();
+                        }
                     });
                 },
                 initModel() {
                     // init cells
                     this.model.cells.splice(0, this.model.cells.length);
                     for (let cell of this.hotFormRef.getCellsMeta()) {
-                        this.model.cells.push(new Cell(cell.row, cell.col));
+                        this.model.cells.push(new Cell({ row: cell.row, col: cell.col }));
                     }
                     this.model.cells = this.sortCells(this.model.cells);
-                    // init data
-                    this.model.datas = this.getDatasFromCells(this.model.cells);
                     // init colWiths
                     this.model.colWidths.splice(0, this.model.colWidths.length);
                     for (let i = 0; i < this.hotFormRef.countVisibleCols(); i++) {
@@ -439,35 +468,35 @@
                         this.model.rowHeights.push(this.hotFormRef.getRowHeight(i));
                     }
                     console.log('initModel', this.model);
-                    this.db.run("INSERT INTO form VALUES (?,?,?,?)", [1, 'A', 'Form A', JSON.stringify(this.model)]);
+                    this.db.run("INSERT INTO form VALUES (?,?,?,?)", [this.model.formId, 'A', 'Form A', this.serializeModel()]);
                     console.log(this.getModelList());
                 },
                 updateHot: function (hotRef, model) {
+                    // set data from form sheet
+                    hotRef.loadData(this.getDatasFromCells(model.cells));
+
+                    // set column width from form sheet
+                    hotRef.updateSettings({
+                        colWidths: model.colWidths,
+                        rowHeights: model.rowHeights,
+                    });
+
+                    // set class from form sheet
+                    for (let cell of model.cells) {
+                        hotRef.setCellMetaObject(cell.row, cell.col, cell);
+                    }
+
+                    // set merge cell from form sheet
+                    for (let cell of model.mergedCells) {
+                        hotRef.getPlugin('MergeCells').merge(cell.from.row, cell.from.col, cell.to.row, cell.to.col);
+                    }
+
                     setTimeout(function () {
                         hotRef.render();
-
-                        // set data from form sheet
-                        hotRef.loadData(model.datas);
-
-                        // set column width from form sheet
-                        hotRef.updateSettings({
-                            colWidths: model.colWidths,
-                            rowHeights: model.rowHeights,
-                        });
-                        hotRef.render();
-
-                        // set class from form sheet
-                        for (let cell of model.cells) {
-                            hotRef.setCellMetaObject(cell.row, cell.col, cell);
-                        }
-
-                        // set merge cell from form sheet
-                        for (let cell of model.mergedCells) {
-                            hotRef.getPlugin('MergeCells').merge(cell.from.row, cell.from.col, cell.to.row, cell.to.col);
-                        }
-                        hotRef.render();
-
-                        console.log('updateHot');
+                        setTimeout(function () {
+                            hotRef.render();
+                            console.log('updateHot');
+                        }, 5);
                     }, 5);
                 },
                 updateModel: function (hotRef) {
@@ -488,10 +517,7 @@
                         if (typeof cellMeta.className !== 'undefined') {
                             cell.className = cellMeta.className;
                         }
-                        console.log('updateModel', cell);
                     }
-                    // set data
-                    this.model.datas = this.getDatasFromCells(this.model.cells);
 
                     console.log('updateModel', this.model);
                 },
@@ -532,6 +558,7 @@
                     $(TD).removeClass('bg-warning');
                 },
                 afterColumnResize(newSize, column, isDoubleClick) {
+                    console.log('afterColumnResize', newSize, column, isDoubleClick);
                     this.model.colWidths[column] = newSize;
                 },
                 afterRowResize(newSize, row, isDoubleClick) {
@@ -543,11 +570,9 @@
                     // init cells
                     this.model.cells.splice(0, this.model.cells.length);
                     for (let cell of this.hotFormRef.getCellsMeta()) {
-                        this.model.cells.push(new Cell(cell.row, cell.col));
+                        this.model.cells.push(new Cell({ row: cell.row, col: cell.col }));
                     }
                     this.model.cells = this.sortCells(this.model.cells);
-                    // init data
-                    this.model.datas = this.getDatasFromCells(this.model.cells);
                     // init colWiths
                     this.model.colWidths.splice(0, this.model.colWidths.length);
                     for (let i = 0; i < this.hotFormRef.countVisibleCols(); i++) {
@@ -560,11 +585,9 @@
                     // init cells
                     this.model.cells.splice(0, this.model.cells.length);
                     for (let cell of this.hotFormRef.getCellsMeta()) {
-                        this.model.cells.push(new Cell(cell.row, cell.col));
+                        this.model.cells.push(new Cell({ row: cell.row, col: cell.col }));
                     }
                     this.model.cells = this.sortCells(this.model.cells);
-                    // init data
-                    this.model.datas = this.getDatasFromCells(this.model.cells);
                     // init rowHeights
                     this.model.rowHeights.splice(0, this.model.rowHeights.length);
                     for (let i = 0; i < this.hotFormRef.countVisibleRows(); i++) {
@@ -626,11 +649,21 @@
                             return 0;
                         });
                 },
-                saveModel: async () => {
-                    this.db
+                saveModel() {
+                    if (this.isFormTab)
+                        this.updateModel(this.hotFormRef);
+                    else
+                        this.updateModel(this.hotCellDataRef);
+                    this.db.run("UPDATE form SET code = ?, name = ?, data = ? WHERE formId = ?", ['A', 'Form A', this.serializeModel(), this.model.formId]);
+                    var dbstr = toBinString(this.db.export());
+                    window.localStorage.setItem("form.sqlite", dbstr);
+                    console.log(this.getModelList());
                 },
-                getModel: async () => {
-
+                getModel() {
+                    let stmt = this.db.prepare("SELECT * FROM form WHERE formId = $formId");
+                    stmt.bind({ $formId: this.model.formId });
+                    stmt.step();
+                    return stmt.getAsObject();
                 },
                 getModelList() {
                     let stmt = this.db.prepare("SELECT * FROM form");
@@ -639,6 +672,23 @@
                         list.push(stmt.getAsObject());
                     }
                     return list;
+                },
+                serializeModel() {
+                    let data = this.cloneObj(this.model);
+                    console.log('serializeModel', data);
+                    return JSON.stringify(data);
+                },
+                deserializeModel(model) {
+                    console.log('beforeDeserializeModel', model)
+                    this.model = JSON.parse(model.data);
+
+                    let list = [];
+                    for (let cell of this.model.cells) {
+                        list.push(new Cell(cell));
+                    }
+                    delete this.model.cells;
+                    this.model.cells = list;
+                    console.log('afterDeserializeModel', this.model);
                 }
             },
             components: {
