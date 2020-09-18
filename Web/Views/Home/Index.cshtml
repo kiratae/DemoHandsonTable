@@ -1,11 +1,16 @@
 ﻿@{
     ViewData["Title"] = "Demo2";
 }
-
 <div id="app">
     <h1>{{ message }}</h1>
 
     <hr />
+
+    <div class="row mb-3 justify-content-end">
+        <div class="col-auto">
+            <button class="btn btn-outline-primary" type="button" data-toggle="modal" data-target="#formListModal"><i class="fa fa-list"></i>&ensp;Form list</button>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-9">
@@ -65,7 +70,7 @@
     </div>
 
     <div class="d-flex justify-content-center mt-3" v-if="db">
-        <button class="btn btn-primary btn-block" type="button" v-on:click="saveModel">Save</button>
+        <button class="btn btn-primary btn-block" type="button" v-on:click="doSaveForm">Save</button>
     </div>
 
     <!-- Modal -->
@@ -128,6 +133,45 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form List Modal -->
+    <div class="modal fade" id="formListModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Form list title</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="text-center">#</th>
+                                    <th scope="col" class="text-center">Code</th>
+                                    <th scope="col" class="text-center">Name</th>
+                                    <th scope="col" class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-if="forms.length == 0">
+                                    <td colspan="4" class="text-center">-- No data --</td>
+                                </tr>
+                                <tr v-else v-for="(form, index) in forms">
+                                    <th scope="row">{{ index }}</th>
+                                    <td>{{ form.code }}</td>
+                                    <td>{{ form.name }}</td>
+                                    <td><a href="#">load this form</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -227,6 +271,70 @@
             }
             return strings.join('');
         }
+    </script>
+
+    <script>
+        var __MOCK_FORM = {
+            formA: {
+                formId: 1,
+                code: 'A',
+                name: 'Form A',
+                data: {
+                    colWidths: [],
+                    rowHeights: [],
+                    cells: [],
+                    mergedCells: []
+                },
+                variables: [
+                    {
+                        variableId: 1,
+                        text: "person",
+                        value: 5,
+                        dataType: 'text',
+                        formula: null,
+                        coords: []
+                    },
+                    {
+                        variableId: 2,
+                        text: "summary1",
+                        value: 10,
+                        dataType: 'numeric',
+                        formula: '=!1 + !2 + !3',
+                        coords: [],
+                    },
+                    {
+                        variableId: 3,
+                        text: "summaryall",
+                        value: 10,
+                        dataType: 'numeric',
+                        formula: '=SUM(!cash.1, !dep.1.1, ...)',
+                        coords: []
+                    }
+                ],
+            },
+            formB: {
+                formId: 2,
+                code: 'A',
+                name: 'Form A',
+                data: {
+                    colWidths: [],
+                    rowHeights: [],
+                    cells: [],
+                    mergedCells: []
+                },
+                variables: [
+                    {
+                        variableId: 1,
+                        text: "cooperative",
+                        value: 5,
+                        dataType: 'text',
+                        formula: null,
+                        coords: []
+                    },
+                ],
+            },
+        }
+
     </script>
 
     <script>
@@ -345,20 +453,9 @@
                     { value: 'numeric', text: 'numeric' },
                     { value: 'date', text: 'date' },
                 ],
-                // ----------- model -------------------
-                model: {
-                    formId: 1,
-                    colWidths: [],
-                    rowHeights: [],
-                    cells: [],
-                    mergedCells: []
-                },
-                form: {
-                    formId: 1,
-                    code: 'A',
-                    name: 'Form A',
-                    data: null
-                },
+                // ----------- Form Tempalte -------------------
+                form: __MOCK_FORM.formA,
+                forms: [],
                 // ----------- db -------------------
                 db: null
             },
@@ -369,11 +466,11 @@
                 this.initDragula();
                 this.initDB(
                     () => {
-                        self.initModel();
+                        self.initForm();
                     },
                     () => {
-                        self.deserializeModel(self.getModel());
-                        self.updateHot(self.hotFormRef, self.model);
+                        self.deserializeModel(self.getData());
+                        self.updateHot(self.hotFormRef, self.form);
                     }
                 );
                 this.message = this.form.name;
@@ -459,44 +556,44 @@
                         }
                     });
                 },
-                initModel() {
+                initForm() {
                     // init cells
-                    this.model.cells.splice(0, this.model.cells.length);
+                    this.form.data.cells.splice(0, this.form.data.cells.length);
                     for (let cell of this.hotFormRef.getCellsMeta()) {
-                        this.model.cells.push(new Cell({ row: cell.row, col: cell.col }));
+                        this.form.data.cells.push(new Cell({ row: cell.row, col: cell.col }));
                     }
-                    this.model.cells = this.sortCells(this.model.cells);
+                    this.form.data.cells = this.sortCells(this.form.data.cells);
                     // init colWiths
-                    this.model.colWidths.splice(0, this.model.colWidths.length);
+                    this.form.data.colWidths.splice(0, this.form.data.colWidths.length);
                     for (let i = 0; i < this.hotFormRef.countVisibleCols(); i++) {
-                        this.model.colWidths.push(this.hotFormRef.getColWidth(i));
+                        this.form.data.colWidths.push(this.hotFormRef.getColWidth(i));
                     }
                     // init rowHeights
-                    this.model.rowHeights.splice(0, this.model.rowHeights.length);
+                    this.form.data.rowHeights.splice(0, this.form.data.rowHeights.length);
                     for (let i = 0; i < this.hotFormRef.countVisibleRows(); i++) {
-                        this.model.rowHeights.push(this.hotFormRef.getRowHeight(i));
+                        this.form.data.rowHeights.push(this.hotFormRef.getRowHeight(i));
                     }
-                    console.log('initModel', this.model);
-                    this.db.run("INSERT INTO form VALUES (?,?,?,?)", [this.model.formId, 'A', 'Form A', this.serializeModel()]);
-                    console.log(this.getModelList());
+                    console.log('initForm', this.form);
+                    this.db.run("INSERT INTO form VALUES (?,?,?,?)", [this.form.formId, this.form.code, this.form.name, this.serializeModel()]);
+                    //console.log(this.getModelList());
                 },
-                updateHot: function (hotRef, model) {
+                updateHot: function (hotRef, form) {
                     // set data from form sheet
-                    hotRef.loadData(this.getDatasFromCells(model.cells));
+                    hotRef.loadData(this.getDatasFromCells(form.data.cells));
 
                     // set column width from form sheet
                     hotRef.updateSettings({
-                        colWidths: model.colWidths,
-                        rowHeights: model.rowHeights,
+                        colWidths: form.data.colWidths,
+                        rowHeights: form.data.rowHeights,
                     });
 
                     // set class from form sheet
-                    for (let cell of model.cells) {
+                    for (let cell of form.data.cells) {
                         hotRef.setCellMetaObject(cell.row, cell.col, cell);
                     }
 
                     // set merge cell from form sheet
-                    for (let cell of model.mergedCells) {
+                    for (let cell of form.data.mergedCells) {
                         hotRef.getPlugin('MergeCells').merge(cell.from.row, cell.from.col, cell.to.row, cell.to.col);
                     }
 
@@ -510,7 +607,7 @@
                 },
                 updateModel: function (hotRef) {
                     // set cells
-                    for (let cell of this.model.cells) {
+                    for (let cell of this.form.data.cells) {
                         if (!this.stringIsNullOrEmpty(hotRef.getDataAtCell(cell.row, cell.col))) {
                             cell.value = hotRef.getDataAtCell(cell.row, cell.col);
                         }
@@ -528,7 +625,7 @@
                         }
                     }
 
-                    console.log('updateModel', this.model);
+                    console.log('updateModel', this.form);
                 },
                 rerender: function (type) {
                     console.log('rerender to -> ' + type);
@@ -536,12 +633,12 @@
                         this.isFormTab = true;
 
                         this.updateModel(this.hotCellDataRef);
-                        this.updateHot(this.hotFormRef, this.model);
+                        this.updateHot(this.hotFormRef, this.form);
                     } else if (type == 'cell-data') {
                         this.isFormTab = false;
 
                         this.updateModel(this.hotFormRef);
-                        this.updateHot(this.hotCellDataRef, this.model, false);
+                        this.updateHot(this.hotCellDataRef, this.form, false);
                     }
                 },
                 afterOnCellMouseOver(event, coords, TD) {
@@ -568,43 +665,43 @@
                 },
                 afterColumnResize(newSize, column, isDoubleClick) {
                     console.log('afterColumnResize', newSize, column, isDoubleClick);
-                    this.model.colWidths[column] = newSize;
+                    this.form.data.colWidths[column] = newSize;
                 },
                 afterRowResize(newSize, row, isDoubleClick) {
-                    this.model.rowHeights[row] = newSize;
+                    this.form.data.rowHeights[row] = newSize;
                 },
                 afterCreateCol(index, amount, source) {
                     this.hotFormRef.render();
                     console.log('afterCreateCol', index, amount, source);
                     // init cells
-                    this.model.cells.splice(0, this.model.cells.length);
+                    this.form.data.cells.splice(0, this.form.data.cells.length);
                     for (let cell of this.hotFormRef.getCellsMeta()) {
                         this.model.cells.push(new Cell({ row: cell.row, col: cell.col }));
                     }
-                    this.model.cells = this.sortCells(this.model.cells);
+                    this.form.data.cells = this.sortCells(this.model.cells);
                     // init colWiths
-                    this.model.colWidths.splice(0, this.model.colWidths.length);
+                    this.form.data.colWidths.splice(0, this.form.data.colWidths.length);
                     for (let i = 0; i < this.hotFormRef.countVisibleCols(); i++) {
-                        this.model.colWidths.push(this.hotFormRef.getColWidth(i));
+                        this.form.data.colWidths.push(this.hotFormRef.getColWidth(i));
                     }
                 },
                 afterCreateRow(index, amount, source) {
                     this.hotFormRef.render();
                     console.log('afterCreateRow', index, amount, source);
                     // init cells
-                    this.model.cells.splice(0, this.model.cells.length);
+                    this.form.data.cells.splice(0, this.form.data.cells.length);
                     for (let cell of this.hotFormRef.getCellsMeta()) {
-                        this.model.cells.push(new Cell({ row: cell.row, col: cell.col }));
+                        this.form.data.cells.push(new Cell({ row: cell.row, col: cell.col }));
                     }
-                    this.model.cells = this.sortCells(this.model.cells);
+                    this.form.data.cells = this.sortCells(this.model.cells);
                     // init rowHeights
-                    this.model.rowHeights.splice(0, this.model.rowHeights.length);
+                    this.model.rowHeights.splice(0, this.form.data.rowHeights.length);
                     for (let i = 0; i < this.hotFormRef.countVisibleRows(); i++) {
-                        this.model.rowHeights.push(this.hotFormRef.getRowHeight(i));
+                        this.form.data.rowHeights.push(this.hotFormRef.getRowHeight(i));
                     }
                 },
                 getVariableById(variableId) {
-                    return this.variables[this.variables.findIndex(item => item.variableId == variableId)];
+                    return this.form.variables[this.form.variables.findIndex(item => item.variableId == variableId)];
                 },
                 test() {
                     console.log(this.hotCellDataRef.getSourceData());
@@ -612,8 +709,8 @@
                 },
                 afterMergeCells(cellRange, mergeParent, auto) {
                     console.log('afterMergeCells', cellRange, mergeParent, auto);
-                    if (!this.model.mergedCells.includes(cellRange))
-                        this.model.mergedCells.push(cellRange);
+                    if (!this.form.data.mergedCells.includes(cellRange))
+                        this.form.data.mergedCells.push(cellRange);
                 },
                 stringIsNullOrEmpty(str) {
                     return str === null || str === '' || typeof str === 'undefined';
@@ -658,24 +755,20 @@
                             return 0;
                         });
                 },
-                saveModel() {
-                    if (this.isFormTab)
-                        this.updateModel(this.hotFormRef);
-                    else
-                        this.updateModel(this.hotCellDataRef);
-                    this.db.run("UPDATE form SET code = ?, name = ?, data = ? WHERE formId = ?", ['A', 'Form A', this.serializeModel(), this.model.formId]);
+                saveForm() {
+                    this.db.run("UPDATE form SET code = ?, name = ?, data = ? WHERE formId = ?", ['A', 'Form A', this.serializeModel(), this.form.formId]);
                     var dbstr = toBinString(this.db.export());
                     window.localStorage.setItem("form.sqlite", dbstr);
-                    console.log(this.getModelList());
+                    console.log(this.getList());
                     alert('Save Model Success!');
                 },
-                getModel() {
+                getData() {
                     let stmt = this.db.prepare("SELECT * FROM form WHERE formId = $formId");
-                    stmt.bind({ $formId: this.model.formId });
+                    stmt.bind({ $formId: this.form.formId });
                     stmt.step();
                     return stmt.getAsObject();
                 },
-                getModelList() {
+                getList() {
                     let stmt = this.db.prepare("SELECT * FROM form");
                     let list = [];
                     while (stmt.step()) {
@@ -684,21 +777,30 @@
                     return list;
                 },
                 serializeModel() {
-                    let data = this.cloneObj(this.model);
+                    let data = this.cloneObj(this.form.data);
                     console.log('serializeModel', data);
                     return JSON.stringify(data);
                 },
-                deserializeModel(model) {
-                    console.log('beforeDeserializeModel', model)
-                    this.model = JSON.parse(model.data);
+                deserializeModel(form) {
+                    console.log('beforeDeserializeModel', form)
+                    this.form.data = JSON.parse(form.data);
 
                     let list = [];
-                    for (let cell of this.model.cells) {
+                    for (let cell of this.form.data.cells) {
                         list.push(new Cell(cell));
                     }
-                    delete this.model.cells;
-                    this.model.cells = list;
-                    console.log('afterDeserializeModel', this.model);
+                    this.form.data.cells = list;
+                    console.log('afterDeserializeModel', this.form);
+                },
+                doSaveForm() {
+                    if (this.isFormTab)
+                        this.updateModel(this.hotFormRef);
+                    else
+                        this.updateModel(this.hotCellDataRef);
+                    this.saveForm();
+                },
+                refresh() {
+                    this.forms = this.getList();
                 }
             },
             components: {
