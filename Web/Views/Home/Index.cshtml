@@ -152,7 +152,8 @@
     <script src="~/lib/vue/vue.js"></script>
     <script src="~/lib/handsontable/vue/dist/vue-handsontable.js"></script>
     <script src="~/lib/dragula/dragula.js"></script>
-    <script src="~/lib/formula-parser/formula-parser.js"></script>
+    @*<script src="~/lib/formula-parser/formula-parser.js"></script>*@
+    <script src="~/lib/formula-parser-sheet-name/formula-parser.js"></script>
     <script src='~/lib/sql.js/dist/sql-wasm.js'></script>
 
     <script>
@@ -177,8 +178,9 @@
 
         // on click variable open modal and add variable data to modal to edit
         $(document).on('click', '.var-btn', function (e) {
-            console.log(e);
-            let variable = app.getVariableById($(this).data('x-id'));
+            let variable = app.getVariableById(parseInt($(this).data('x-id')));
+            console.log(variable);
+            console.log(variable.coords);
             app.varibleModal.text = variable.text;
             app.varibleModal.dataType = variable.dataType;
             app.varibleModal.coords = variable.coords;
@@ -295,7 +297,7 @@
                     readOnly: true,
                     disableVisualSelection: true,
                     autoRowSize: true,
-                    stretchH: 'all',
+                    //stretchH: 'all',
                     renderer: customRenderer,
                     licenseKey: 'non-commercial-and-evaluation'
                 },
@@ -351,6 +353,12 @@
                     cells: [],
                     mergedCells: []
                 },
+                form: {
+                    formId: 1,
+                    code: 'A',
+                    name: 'Form A',
+                    data: null
+                },
                 // ----------- db -------------------
                 db: null
             },
@@ -368,6 +376,7 @@
                         self.updateHot(self.hotFormRef, self.model);
                     }
                 );
+                this.message = this.form.name;
             },
             methods: {
                 cloneObj(obj) {
@@ -595,7 +604,7 @@
                     }
                 },
                 getVariableById(variableId) {
-                    return this.cloneObj(this.variables[this.variables.findIndex(item => item.variableId == variableId)]);
+                    return this.variables[this.variables.findIndex(item => item.variableId == variableId)];
                 },
                 test() {
                     console.log(this.hotCellDataRef.getSourceData());
@@ -658,6 +667,7 @@
                     var dbstr = toBinString(this.db.export());
                     window.localStorage.setItem("form.sqlite", dbstr);
                     console.log(this.getModelList());
+                    alert('Save Model Success!');
                 },
                 getModel() {
                     let stmt = this.db.prepare("SELECT * FROM form WHERE formId = $formId");
