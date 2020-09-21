@@ -2,13 +2,13 @@
     ViewData["Title"] = "Demo2";
 }
 <div id="app">
-    <h1>{{ message }}</h1>
+    <h1>{{ form.code }}&ensp;|&ensp;{{ form.name }}</h1>
 
     <hr />
 
     <div class="row mb-3 justify-content-end">
         <div class="col-auto">
-            <button class="btn btn-outline-primary" type="button" data-toggle="modal" data-target="#formListModal"><i class="fa fa-list"></i>&ensp;Form list</button>
+            <button class="btn btn-outline-primary" type="button" data-toggle="modal" data-target="#formListModal" v-on:click="openFormListModal"><i class="fa fa-list"></i>&ensp;Form list</button>
         </div>
     </div>
 
@@ -20,6 +20,9 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" id="cell-data-tab" data-toggle="tab" href="#cell-data" role="tab" aria-controls="cell-data" aria-selected="false" v-on:click="rerender('cell-data')">จัดการข้อมูลตาราง</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="answer-tab" data-toggle="tab" href="#answer" role="tab" aria-controls="answer" aria-selected="false" v-on:click="rerender('answer')">รายงานข้อมูล</a>
                 </li>
             </ul>
             <div class="tab-content">
@@ -47,16 +50,27 @@
                     </div>
 
                 </div>
+                <div class="tab-pane" id="answer" role="tabpanel" aria-labelledby="answer-tab">
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="hot handsontable htRowHeaders htColumnHeaders" id="answerSheet" style="height: 420px; overflow: hidden; width: 100%;" data-originalstyle="height: 420px; overflow: hidden; width: 100%;">
+                                <hot-table ref="answerWrapper" :settings="hotAnswerSettings"></hot-table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
         <div class="col-3">
-            <div class="card h-100" v-bind:class="{ 'd-none' : isFormTab }">
+            <div class="card h-100" v-bind:class="{ 'd-none' : currentTab != 'cell-data' }">
                 <div class="card-header">
                     <span class="card-title">จัดการสูตรคำนวน</span>
                 </div>
                 <div class="card-body">
                     <div class="list-group" id="variables">
-                        <div class="list-group-item px-3 py-2" v-for="item in variables" :data-variable-id="item.variableId">
+                        <div class="list-group-item px-3 py-2" v-for="item in form.variables" :data-variable-id="item.variableId">
                             <button class="btn p-0 handle mr-1 fa fa-arrows-alt text-black-50" type="button"></button>
                             <span>{{ item.text }} </span>
                         </div>
@@ -131,8 +145,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary">Save changes</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" v-on:click="doSaveVariable(varibleModal.variableId)">Save</button>
                 </div>
             </div>
         </div>
@@ -164,10 +178,10 @@
                                     <td colspan="4" class="text-center">-- No data --</td>
                                 </tr>
                                 <tr v-else v-for="(form, index) in forms">
-                                    <th scope="row">{{ index }}</th>
+                                    <th scope="row" class="text-center">{{ index + 1 }}</th>
                                     <td>{{ form.code }}</td>
                                     <td>{{ form.name }}</td>
-                                    <td><a href="#">load this form</a></td>
+                                    <td class="text-center"><a href="#" v-on:click="loadForm(form.formId)">load this form</a></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -197,7 +211,8 @@
     <script src="~/lib/handsontable/vue/dist/vue-handsontable.js"></script>
     <script src="~/lib/dragula/dragula.js"></script>
     @*<script src="~/lib/formula-parser/formula-parser.js"></script>*@
-    <script src="~/lib/formula-parser-sheet-name/formula-parser.js"></script>
+    <script src="~/lib/hyperformula/dist/hyperformula.full.js"></script>
+    @*<script src="~/lib/formula-parser-sheet-name/formula-parser.js"></script>*@
     <script src='~/lib/sql.js/dist/sql-wasm.js'></script>
 
     <script>
@@ -205,18 +220,27 @@
         var customRenderer = function (instance, td, row, col, prop, value, cellProperties) {
             Handsontable.renderers.TextRenderer.apply(this, arguments);
             if (value != null && value != '') {
-                if (cellProperties.variable)
-                    $(td).html('<a class="btn btn-link p-0 var-btn" href="#" role="button" data-x-id="' + cellProperties.variable.variableId + '" data-toggle="modal" data-target="#exampleModal">' + cellProperties.variable.text + '</a>');
+                if (cellProperties.variableId)
+                    $(td).html('<a class="btn btn-link p-0 var-btn" href="#" role="button" data-x-id="' + cellProperties.variableId + '" data-toggle="modal" data-target="#exampleModal">' + value + '</a>');
             }
             if (cellProperties.isTemplate) {
-                $(td).css('background-color', '#f8f8f8');
+                //$(td).css('background-color', '#f8f8f8');
             }
         };
 
         var customFormRenderer = function (instance, td, row, col, prop, value, cellProperties) {
             Handsontable.renderers.TextRenderer.apply(this, arguments);
             if (value && value[0] == '!') {
-                $(td).html('');
+                //$(td).html('');
+                cellProperties.readOnly = true;
+            }
+        };
+
+        var customAnswerRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+            Handsontable.renderers.TextRenderer.apply(this, arguments);
+            if (cellProperties.isTemplate) {
+                cellProperties.readOnly = true;
+                //$(td).css('background-color', '#f8f8f8');
             }
         };
 
@@ -225,6 +249,7 @@
             let variable = app.getVariableById(parseInt($(this).data('x-id')));
             console.log(variable);
             console.log(variable.coords);
+            app.varibleModal.variableId = variable.variableId;
             app.varibleModal.text = variable.text;
             app.varibleModal.dataType = variable.dataType;
             app.varibleModal.coords = variable.coords;
@@ -246,15 +271,20 @@
                     this.className = options.className;
                 if (options.isTemplate)
                     this.isTemplate = options.isTemplate;
-                if (options.variable)
-                    this.variable = options.variable;
+                if (options.variableId)
+                    this.variableId = options.variableId;
             }
 
             setTemplate() {
                 this.isTemplate = true;
             }
+
+            removeTemplate() {
+                delete this.isTemplate;
+            }
         }
 
+        // db helper
         function toBinArray(str) {
             var l = str.length,
                 arr = new Uint8Array(l);
@@ -314,8 +344,8 @@
             },
             formB: {
                 formId: 2,
-                code: 'A',
-                name: 'Form A',
+                code: 'B',
+                name: 'Form B',
                 data: {
                     colWidths: [],
                     rowHeights: [],
@@ -341,9 +371,9 @@
         var app = new Vue({
             el: '#app',
             data: {
-                message: 'Hansontable! Demo1',
                 hotFormRef: null,
                 hotCellDataRef: null,
+                hotAnswerRef: null,
                 hotFormSettings: {
                     startRows: 3, // 30
                     startCols: 3, // 26
@@ -409,7 +439,19 @@
                     renderer: customRenderer,
                     licenseKey: 'non-commercial-and-evaluation'
                 },
-                isFormTab: true,
+                hotAnswerSettings: {
+                    data: [],
+                    rowHeaders: true,
+                    colHeaders: true,
+                    mergeCells: true,
+                    width: '100%',
+                    height: 420,
+                    autoRowSize: true,
+                    //stretchH: 'all',
+                    renderer: customAnswerRenderer,
+                    licenseKey: 'non-commercial-and-evaluation'
+                },
+                currentTab: 'form',
                 dragEl: null,
                 variables: [
                     {
@@ -442,6 +484,7 @@
                 },
                 cellMergeData: [],
                 varibleModal: {
+                    variableId: null,
                     text: '',
                     dataType: '',
                     coords: [],
@@ -463,14 +506,15 @@
                 const self = this;
                 this.initHotForm();
                 this.initHotCellData();
+                this.initHotAnswer();
                 this.initDragula();
+                this.initParser();
                 this.initDB(
                     () => {
                         self.initForm();
                     },
                     () => {
-                        self.deserializeModel(self.getData());
-                        self.updateHot(self.hotFormRef, self.form);
+                        self.loadForm(self.form.formId);
                     }
                 );
                 this.message = this.form.name;
@@ -494,6 +538,9 @@
                     Handsontable.hooks.add('afterOnCellMouseOver', this.afterOnCellMouseOver, this.hotCellDataRef);
                     Handsontable.hooks.add('afterOnCellMouseOut', this.afterOnCellMouseOut, this.hotCellDataRef);
                 },
+                initHotAnswer() {
+                    this.hotAnswerRef = this.$refs.answerWrapper.hotInstance;
+                },
                 initDragula() {
                     const self = this;
                     this.dragEl = dragula([document.querySelector('#variables')], {
@@ -508,7 +555,8 @@
                             if (self.cellDataTab.mouseOnCoords != null && self.hotCellDataRef != null) {
                                 let isTemplate = self.hotCellDataRef.getCellMeta(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col).isTemplate;
                                 if (!isTemplate) {
-                                    let variable = self.getVariableById($(el).data('variable-id'));
+                                    let variableId = $(el).data('variable-id');
+                                    let variable = self.getVariableById(variableId);
                                     let text = '!' + $(el).text().trim();
                                     variable.coords.push({
                                         row: self.cellDataTab.mouseOnCoords.row,
@@ -527,7 +575,7 @@
                                         })
                                     }
                                     self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, text, 'user drag from dragula');
-                                    self.hotCellDataRef.setCellMetaObject(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, { variable: variable });
+                                    self.hotCellDataRef.setCellMetaObject(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, { variableId: variableId, value: text });
                                     self.hotCellDataRef.render();
                                 }
                                 self.cellDataTab.mouseOnCoords = null;
@@ -549,12 +597,27 @@
                                 updateCallback();
                         } else {
                             self.db = new SQL.Database();
-                            self.db.run("CREATE TABLE form (formId INTEGER PRIMARY KEY, code, name, data);");
+                            self.db.run("CREATE TABLE form (formId INTEGER PRIMARY KEY, code, name, data, variables);");
 
                             if (initCallback)
                                 initCallback();
                         }
                     });
+                },
+                initParser() {
+                    // define options
+                    const options = {
+                        licenseKey: 'agpl-v3',
+                        precisionRounding: 4
+                    };
+
+                    // call the static method to build a new instance
+                    this.parser = HyperFormula.buildFromSheets({
+                        A: this.getDatasFromCells(this.form.data.cells),
+                        B: this.getDatasFromCells(this.form.data.cells),
+                    }, options);
+
+                    console.log('countSheets', this.parser.countSheets());
                 },
                 initForm() {
                     // init cells
@@ -574,7 +637,8 @@
                         this.form.data.rowHeights.push(this.hotFormRef.getRowHeight(i));
                     }
                     console.log('initForm', this.form);
-                    this.db.run("INSERT INTO form VALUES (?,?,?,?)", [this.form.formId, this.form.code, this.form.name, this.serializeModel()]);
+                    this.db.run("INSERT INTO form VALUES (?,?,?,?,?)", [this.form.formId, this.form.code, this.form.name, this.serializeData(this.form.data), this.serializeData(this.form.variables)]);
+                    this.db.run("INSERT INTO form VALUES (?,?,?,?,?)", [__MOCK_FORM.formB.formId, __MOCK_FORM.formB.code, __MOCK_FORM.formB.name, this.serializeData(this.form.data), this.serializeData(__MOCK_FORM.formB.variables)]);
                     //console.log(this.getModelList());
                 },
                 updateHot: function (hotRef, form) {
@@ -610,15 +674,20 @@
                     for (let cell of this.form.data.cells) {
                         if (!this.stringIsNullOrEmpty(hotRef.getDataAtCell(cell.row, cell.col))) {
                             cell.value = hotRef.getDataAtCell(cell.row, cell.col);
+                        } else {
+                            cell.value = null;
                         }
+                        console.log('updateModel', cell, cell.value, this.stringIsNullOrEmpty(cell.value));
                         if (!this.stringIsNullOrEmpty(cell.value)) {
                             if (!this.isVariable(cell.value)) {
                                 cell.setTemplate();
                             }
+                        } else {
+                            cell.removeTemplate();
                         }
                         let cellMeta = hotRef.getCellMeta(cell.row, cell.col);
-                        if (typeof cellMeta.variable !== 'undefined') {
-                            cell.variable = cellMeta.variable;
+                        if (typeof cellMeta.variableId !== 'undefined') {
+                            cell.variableId = cellMeta.variableId;
                         }
                         if (typeof cellMeta.className !== 'undefined') {
                             cell.className = cellMeta.className;
@@ -630,15 +699,20 @@
                 rerender: function (type) {
                     console.log('rerender to -> ' + type);
                     if (type == 'form') {
-                        this.isFormTab = true;
+                        this.currentTab = 'form';
 
                         this.updateModel(this.hotCellDataRef);
                         this.updateHot(this.hotFormRef, this.form);
                     } else if (type == 'cell-data') {
-                        this.isFormTab = false;
+                        this.currentTab = 'cell-data';
 
                         this.updateModel(this.hotFormRef);
-                        this.updateHot(this.hotCellDataRef, this.form, false);
+                        this.updateHot(this.hotCellDataRef, this.form);
+                    } else if (type == 'answer') {
+                        this.currentTab = 'answer';
+
+                        this.updateModel(this.hotFormRef);
+                        this.updateHot(this.hotAnswerRef, this.form);
                     }
                 },
                 afterOnCellMouseOver(event, coords, TD) {
@@ -701,6 +775,7 @@
                     }
                 },
                 getVariableById(variableId) {
+                    console.log('getVariableById', this.form);
                     return this.form.variables[this.form.variables.findIndex(item => item.variableId == variableId)];
                 },
                 test() {
@@ -730,17 +805,25 @@
                 getCellLetter(row, col) {
                     return ((65 + col) > 90 ? String.fromCharCode(65 + col / 65) + String.fromCharCode(65 + col - 26) : String.fromCharCode(65 + col)) + row;
                 },
-                getDatasFromCells(cells) {
+                getDatasFromCells(cells, defualtValue = null) {
+                    console.log('getDatasFromCells', cells);
                     let datas = [], rowTemp = -1;
                     for (let cell of cells) {
                         if (rowTemp != cell.row) {
                             rowTemp = cell.row;
                             datas.push([]);
-                            datas[cell.row].push(cell.value);
+                            if (!cell.value)
+                                datas[cell.row].push(defualtValue);
+                            else
+                                datas[cell.row].push(cell.value);
                         } else {
-                            datas[cell.row].push(cell.value);
+                            if (!cell.value)
+                                datas[cell.row].push(defualtValue);
+                            else
+                                datas[cell.row].push(cell.value);
                         }
                     }
+                    console.log(datas);
                     return datas;
                 },
                 sortCells(cells) {
@@ -756,11 +839,11 @@
                         });
                 },
                 saveForm() {
-                    this.db.run("UPDATE form SET code = ?, name = ?, data = ? WHERE formId = ?", ['A', 'Form A', this.serializeModel(), this.form.formId]);
+                    this.db.run("UPDATE form SET code = ?, name = ?, data = ?, variables = ? WHERE formId = ?", [this.form.code, this.form.name, this.serializeData(this.form.data), this.serializeData(this.form.variables), this.form.formId]);
                     var dbstr = toBinString(this.db.export());
                     window.localStorage.setItem("form.sqlite", dbstr);
                     console.log(this.getList());
-                    alert('Save Model Success!');
+                    alert(`Save "${this.form.name}" Success!`);
                 },
                 getData() {
                     let stmt = this.db.prepare("SELECT * FROM form WHERE formId = $formId");
@@ -776,31 +859,58 @@
                     }
                     return list;
                 },
-                serializeModel() {
-                    let data = this.cloneObj(this.form.data);
-                    console.log('serializeModel', data);
-                    return JSON.stringify(data);
+                serializeData(obj) {
+                    return JSON.stringify(obj);
                 },
-                deserializeModel(form) {
-                    console.log('beforeDeserializeModel', form)
-                    this.form.data = JSON.parse(form.data);
-
+                deserializeData(obj) {
+                    return JSON.parse(obj);
+                },
+                createCells(cells) {
                     let list = [];
-                    for (let cell of this.form.data.cells) {
+                    for (let cell of cells) {
                         list.push(new Cell(cell));
                     }
-                    this.form.data.cells = list;
-                    console.log('afterDeserializeModel', this.form);
+                    return list;
                 },
                 doSaveForm() {
-                    if (this.isFormTab)
+                    if (this.currentTab == 'form')
                         this.updateModel(this.hotFormRef);
-                    else
+                    else if (this.currentTab == 'cell-data')
                         this.updateModel(this.hotCellDataRef);
+                    else if (this.currentTab == 'answer')
+                        this.updateModel(this.hotAnswerRef);
                     this.saveForm();
                 },
-                refresh() {
+                openFormListModal() {
                     this.forms = this.getList();
+                    console.log(this.forms);
+                },
+                loadForm(id) {
+                    this.form.formId = id;
+                    let form = this.getData();
+                    form.data = this.deserializeData(form.data);
+                    form.variables = this.deserializeData(form.variables);
+                    form.data.cells = this.createCells(form.data.cells);
+                    console.log('loadForm form', form);
+                    this.form = this.cloneObj(form);
+                    this.parser.setSheetContent(this.form.code, this.getDatasFromCells(this.form.data.cells, ''));
+                    this.updateHot(this.hotFormRef, this.form);
+                    this.updateHot(this.hotCellDataRef, this.form);
+                    this.updateHot(this.hotAnswerRef, this.form);
+                    console.log('getAllSheetsSerialized', this.parser.getAllSheetsSerialized());
+                },
+                addForm() {
+                    this.hotFormRef.clear();
+                    this.hotFormRef.deselectCell();
+                    //this.hotFormRef.updateSettings(this.hotFormSettings, true);
+                },
+                doSaveVariable(id) {
+                    let varaible = this.getVariableById(id);
+                    varaible.text = this.varibleModal.text;
+                    varaible.dataType = this.varibleModal.dataType;
+                    varaible.coords = this.varibleModal.coords;
+                    varaible.formValidates = this.varibleModal.formValidates;
+                    varaible.formula = this.varibleModal.formula;
                 }
             },
             components: {
