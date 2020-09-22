@@ -242,7 +242,7 @@
                 cellProperties.readOnly = true;
                 //$(td).css('background-color', '#f8f8f8');
             }
-            if (cellProperties.variableId) {
+            if (cellProperties.variableId && app.getVariableById(cellProperties.variableId).formula) {
                 cellProperties.readOnly = true;
                 //$(td).css('background-color', '#f8f8f8');
             }
