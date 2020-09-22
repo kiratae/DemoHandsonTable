@@ -242,6 +242,10 @@
                 cellProperties.readOnly = true;
                 //$(td).css('background-color', '#f8f8f8');
             }
+            if (cellProperties.variableId) {
+                cellProperties.readOnly = true;
+                //$(td).css('background-color', '#f8f8f8');
+            }
         };
 
         // on click variable open modal and add variable data to modal to edit
@@ -447,6 +451,7 @@
                     width: '100%',
                     height: 420,
                     autoRowSize: true,
+                    formulas: true,
                     //stretchH: 'all',
                     renderer: customAnswerRenderer,
                     licenseKey: 'non-commercial-and-evaluation'
@@ -565,14 +570,11 @@
                                     });
                                     if (variable.coords.length > 1) {
                                         variable.coords.sort(function (a, b) {
-                                            if (a.cell < b.cell) {
+                                            if (a.cell < b.cell)
                                                 return -1;
-                                            }
-                                            if (a.cell > b.cell) {
-                                                return 1;
-                                            }
-                                            return 0;
-                                        })
+                                            if (a.cell > b.cell)
+                                                return 0;
+                                        });
                                     }
                                     self.hotCellDataRef.setDataAtCell(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, text, 'user drag from dragula');
                                     self.hotCellDataRef.setCellMetaObject(self.cellDataTab.mouseOnCoords.row, self.cellDataTab.mouseOnCoords.col, { variableId: variableId, value: text });
@@ -641,9 +643,9 @@
                     this.db.run("INSERT INTO form VALUES (?,?,?,?,?)", [__MOCK_FORM.formB.formId, __MOCK_FORM.formB.code, __MOCK_FORM.formB.name, this.serializeData(this.form.data), this.serializeData(__MOCK_FORM.formB.variables)]);
                     //console.log(this.getModelList());
                 },
-                updateHot: function (hotRef, form) {
+                updateHot: function (hotRef, form, isAnswer = false) {
                     // set data from form sheet
-                    hotRef.loadData(this.getDatasFromCells(form.data.cells));
+                    hotRef.loadData(isAnswer ? this.getHotSourceDatas(form.data.cells) : this.getDatasFromCells(form.data.cells));
 
                     // set column width from form sheet
                     hotRef.updateSettings({
@@ -712,7 +714,7 @@
                         this.currentTab = 'answer';
 
                         this.updateModel(this.hotFormRef);
-                        this.updateHot(this.hotAnswerRef, this.form);
+                        this.updateHot(this.hotAnswerRef, this.form, true);
                     }
                 },
                 afterOnCellMouseOver(event, coords, TD) {
@@ -750,7 +752,7 @@
                     // init cells
                     this.form.data.cells.splice(0, this.form.data.cells.length);
                     for (let cell of this.hotFormRef.getCellsMeta()) {
-                        this.model.cells.push(new Cell({ row: cell.row, col: cell.col }));
+                        this.form.data.cells.push(new Cell({ row: cell.row, col: cell.col }));
                     }
                     this.form.data.cells = this.sortCells(this.model.cells);
                     // init colWiths
@@ -769,7 +771,7 @@
                     }
                     this.form.data.cells = this.sortCells(this.model.cells);
                     // init rowHeights
-                    this.model.rowHeights.splice(0, this.form.data.rowHeights.length);
+                    this.form.data.rowHeights.splice(0, this.form.data.rowHeights.length);
                     for (let i = 0; i < this.hotFormRef.countVisibleRows(); i++) {
                         this.form.data.rowHeights.push(this.hotFormRef.getRowHeight(i));
                     }
@@ -893,7 +895,7 @@
                     form.data.cells = this.createCells(form.data.cells);
                     console.log('loadForm form', form);
                     this.form = this.cloneObj(form);
-                    this.parser.setSheetContent(this.form.code, this.getDatasFromCells(this.form.data.cells, ''));
+                    
                     this.updateHot(this.hotFormRef, this.form);
                     this.updateHot(this.hotCellDataRef, this.form);
                     this.updateHot(this.hotAnswerRef, this.form);
@@ -911,6 +913,32 @@
                     varaible.coords = this.varibleModal.coords;
                     varaible.formValidates = this.varibleModal.formValidates;
                     varaible.formula = this.varibleModal.formula;
+                },
+                getHotSourceDatas(cells) {
+                    console.log('before -> getHotSourceDatas', cells);
+                    let datas = [], rowTemp = -1;
+                    for (let cell of cells) {
+                        if (rowTemp != cell.row) {
+                            rowTemp = cell.row;
+                            datas.push([]);
+                            if (cell.variableId)
+                                datas[cell.row].push(this.getVariableById(cell.variableId).formula);
+                            else
+                                datas[cell.row].push(cell.value);
+                        } else {
+                            if (cell.variableId)
+                                datas[cell.row].push(this.getVariableById(cell.variableId).formula);
+                            else
+                                datas[cell.row].push(cell.value);
+                        }
+                    }
+                    console.log('after -> getHotSourceDatas', datas);
+                    return datas;
+                },
+                setSheetData() {
+                    for (let form of this.getList()) {
+                        this.parser.setSheetContent(form.code, this.getHotSourceDatas(this.createCells(form.data.cells)));
+                    }
                 }
             },
             components: {
