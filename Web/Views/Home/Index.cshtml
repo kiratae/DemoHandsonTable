@@ -588,7 +588,7 @@
                     const self = this;
 
                     config = {
-                        locateFile: filename => `/lib/sql.js/dist/${filename}`
+                        locateFile: filename => `@Url.Content("~/lib/sql.js/dist/")${filename}`
                     }
                     initSqlJs(config).then(function (SQL) {
                         var dbstr = window.localStorage.getItem("form.sqlite");

@@ -2,8 +2,10 @@
     ViewData["Title"] = "luckysheet";
 }
 
-<div class="card mt-5">
-    <div class="card-body">
+<h1 class="mt-3">Luckysheet</h1>
+
+<div class="card mt-3">
+    <div class="card-body p-0">
         <div id="luckysheet" style="width:100%;height:420px;"></div>
     </div>
 </div>
@@ -24,10 +26,15 @@
             //Configuration item
             var options = {
                 container: 'luckysheet', //luckysheet is the container id
-                showinfobar: false,
-                showsheetbar: false,
-                showtoolbar: false,
-                showstatisticBar: false
+                lang: 'en',
+                showinfobar: false, // Whether to display the top name bar
+                showsheetbar: false, // Whether to display the bottom table name area
+                showtoolbar: true, // Whether to display the toolbar in the second row
+                showstatisticBar: true, // Whether to display the bottom count bar
+                fullscreenmode: false, // Whether full-screen mode. In non-full-screen mode, the marker box is not forced to be selected
+                column: 26, // The default number of columns in an empty table
+                row: 50, // The default number of rows in an empty table
+                data: [{ "name": "Sheet1", color: "", "status": "1", "order": "0", "data": [], "config": {}, "index": 0 }]
             }
             luckysheet.create(options)
         });

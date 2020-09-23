@@ -9,6 +9,15 @@
   <ItemGroup>
     <None Include="wwwroot\lib\luckysheet\css\menuSprite.svg" />
     <None Include="wwwroot\lib\luckysheet\css\sprite38.svg" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetCell.js" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetChart.js" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetComment.js" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetConditionFormat.js" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetFormula.js" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetPivotTable.js" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetPivotTableData.js" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetSparkline.js" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetTable.js" />
     <None Include="wwwroot\lib\luckysheet\expendPlugins\chart\chartmix.umd.min.js" />
     <None Include="wwwroot\lib\luckysheet\fonts\fontawesome-webfont.svg" />
     <None Include="wwwroot\lib\luckysheet\fonts\fontawesome-webfont.woff2" />
