@@ -14,13 +14,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\lib\luckysheet\assets\iconfont\iconfont.js" />
+    <None Include="wwwroot\lib\luckysheet\assets\iconfont\iconfont.svg" />
+    <None Include="wwwroot\lib\luckysheet\assets\iconfont\iconfont.woff2" />
     <None Include="wwwroot\lib\luckysheet\css\menuSprite.svg" />
     <None Include="wwwroot\lib\luckysheet\css\sprite38.svg" />
     <None Include="wwwroot\lib\luckysheet\demoData\sheetCell.js" />
     <None Include="wwwroot\lib\luckysheet\demoData\sheetChart.js" />
     <None Include="wwwroot\lib\luckysheet\demoData\sheetComment.js" />
     <None Include="wwwroot\lib\luckysheet\demoData\sheetConditionFormat.js" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetDataVerification.js" />
     <None Include="wwwroot\lib\luckysheet\demoData\sheetFormula.js" />
+    <None Include="wwwroot\lib\luckysheet\demoData\sheetPicture.js" />
     <None Include="wwwroot\lib\luckysheet\demoData\sheetPivotTable.js" />
     <None Include="wwwroot\lib\luckysheet\demoData\sheetPivotTableData.js" />
     <None Include="wwwroot\lib\luckysheet\demoData\sheetSparkline.js" />
