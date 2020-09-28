@@ -8,17 +8,37 @@
     <hr />
 
     <div class="row">
-        <div class="col-10">
-            <div class="card">
-                <div class="card-body p-2">
+        <div class="col-10" v-bind:class="currentTab == 'form' ? 'col-12' : 'col-10'">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="form-tab" data-toggle="tab" href="#form" role="tab" aria-controls="form" aria-selected="true" v-on:click="rerender('form')">จัดการแบบฟอร์ม</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="cell-data-tab" data-toggle="tab" href="#cell-data" role="tab" aria-controls="cell-data" aria-selected="false" v-on:click="rerender('cell-data')">จัดการข้อมูลตาราง</a>
+                </li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane active" id="form" role="tabpanel" aria-labelledby="form-tab">
+                    <div class="card">
+                        <div class="card-body p-2">
 
-                    <div id="luckysheet" style="width:100%;height:520px;overflow: hidden;"></div>
+                            <div id="lsForm" style="width:100%;height:520px;overflow: hidden;"></div>
 
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane" id="cell-data" role="tabpanel" aria-labelledby="cell-data-tab">
+                    <div class="card">
+                        <div class="card-body p-2">
+
+                            <div id="lsCellData" style="width:100%;height:520px;overflow: hidden;"></div>
+
+                        </div>
+                    </div>
                 </div>
             </div>
-
         </div>
-        <div class="col-2 pl-0">
+        <div class="pl-0" v-bind:class="currentTab == 'cell-data' ? 'col-2' : 'd-none'">
             <div class="card h-100">
                 <div class="card-header">
                     <span class="card-title">จัดการสูตรคำนวน</span>
@@ -160,10 +180,11 @@
             el: '#app',
             data: {
                 dragEl: null,
-                luckysheetRef: null,
-                luckysheetElId: 'luckysheet',
-                luckysheetColumn: 26,
-                luckysheetRow: 50,
+                lsRef: null,
+                lsFormEl: 'lsForm',
+                lsCellDataEl: 'lsCellData',
+                lsColumn: 26,
+                lsRow: 50,
                 data: [{
                     name: "Sheet1",  //Worksheet name
                     index: 0, //Worksheet index
@@ -186,6 +207,7 @@
                     { value: 'numeric', text: 'numeric' },
                     { value: 'date', text: 'date' },
                 ],
+                currentTab: 'form',
                 form: __MOCK_FORM,
             },
             mounted() {
@@ -193,26 +215,33 @@
                 this.initDragula();
             },
             methods: {
-                initLuckysheet() {
+                initLuckysheet(tab = 'form') {
                     let options = {
-                        container: this.luckysheetElId, //luckysheet is the container id
+                        container: (tab == 'form' ? this.lsFormEl : this.lsCellDataEl), //luckysheet is the container id
                         lang: 'en',
                         showinfobar: false, // Whether to display the top name bar
-                        showsheetbar: true, // Whether to display the bottom table name area
+                        showsheetbar: false, // Whether to display the bottom table name area
                         showtoolbar: true, // Whether to display the toolbar in the second row
                         showformulabar: true, // me custom
-                        showstatisticBar: true, // Whether to display the bottom count bar
+                        showstatisticBar: false, // Whether to display the bottom count bar
                         fullscreenmode: false, // Whether full-screen mode. In non-full-screen mode, the marker box is not forced to be selected
-                        column: this.luckysheetColumn, // The default number of columns in an empty table
-                        row: this.luckysheetRow, // The default number of rows in an empty table
+                        column: this.lsColumn, // The default number of columns in an empty table
+                        row: this.lsRow, // The default number of rows in an empty table
                         data: this.data,
+                        allowEdit: (tab == 'form'),
                         onCellClick: this.onCellClick,
                         onCellMouseOver: this.onCellMouseOver,
                         onCellMouseOut: this.onCellMouseOut,
                         onSheetMouseOut: this.onSheetMouseOut
                     }
-                    this.luckysheetRef = luckysheet;
-                    this.luckysheetRef.create(options);
+                    console.log('initLuckysheet', tab, options);
+                    if (this.lsRef != null)
+                        this.lsRef.destroy();
+                    this.lsRef = luckysheet;
+                    const self = this;
+                    setTimeout(() => {
+                        self.lsRef.create(options);
+                    }, 5);
                 },
                 initDragula() {
                     const self = this;
@@ -226,24 +255,40 @@
                             console.log('cancel', el);
                             let text = '!' + $(el).text().trim();
 
-                            if (self.mouseOnCoords && self.luckysheetRef) {
-                                luckysheet.setcellvalue(self.mouseOnCoords.row, self.mouseOnCoords.col, luckysheet.flowdata(), { m: text, v: text, isVariable: true, un: 1, fc: "#0000ff" });
-                                luckysheet.jfrefreshgrid();
+                            if (self.mouseOnCoords && self.lsRef) {
+                                let obj = {
+                                    m: text,
+                                    v: text,
+                                    ro: true, // ro stand for readOnly
+                                    iv: true, // iv stand for isVariable
+                                    //un: 1, // underline
+                                    ht: 0, // 0 center, 1 left, 2 right
+                                    fc: "#0000ff",
+                                    ff: 1
+                                };
+                                self.lsRef.setcellvalue(self.mouseOnCoords.row, self.mouseOnCoords.col, self.lsRef.flowdata(), obj);
+                                self.lsRef.jfrefreshgrid();
                                 self.mouseOnCoords = null;
                             }
                         })
                 },
+                rerender(tab) {
+                    this.currentTab = tab;
+                    //if (this.lsRef)
+                    //    console.log(this.lsRef.getAllSheets());
+                    this.initLuckysheet(this.currentTab);
+                },
                 onCellClick(row, col, data) {
                     //console.log('onCellClick', row, col, data);
-                    if (data && data.isVariable) {
+                    if (data && data.iv) {
                         console.log('isVariable', data);
                     }
                 },
                 onCellMouseOver(row, col, data) {
                     //console.log('onCellMouseOver', row, col, data);
                     if (this.dragEl.dragging) {
-                        this.luckysheetRef.setluckysheet_select_save([{ row: [row, row], column: [col, col] }]);
-                        this.luckysheetRef.selectHightlightShow();
+                        this.lsRef.setluckysheet_select_save([{ row: [row, row], column: [col, col] }]);
+                        this.lsRef.selectHightlightShow();
                         this.mouseOnCoords = { row: row, col: col };
                     } else {
                         this.mouseOnCoords = null;
@@ -256,7 +301,7 @@
                 onSheetMouseOut() {
                     //console.log('onSheetMouseOut');
                     this.mouseOnCoords = null;
-                }
+                },
             }
         });
     </script>
