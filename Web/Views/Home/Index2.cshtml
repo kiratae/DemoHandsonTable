@@ -7,6 +7,10 @@
 
     <hr />
 
+    <div class="my-3">
+        <input type="file" id="Luckyexcel-demo-file" name="Luckyexcel-demo-file" change="demoHandler" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+    </div>
+
     <div class="row">
         <div class="col-10" v-bind:class="currentTab == 'form' ? 'col-12' : 'col-10'">
             <ul class="nav nav-tabs" role="tablist">
@@ -123,6 +127,7 @@
 </div>
 
 @section Head {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.css" />
     <link rel="stylesheet" href="~/lib/luckysheet/plugins/css/pluginsCss.css" />
     <link rel="stylesheet" href="~/lib/luckysheet/plugins/plugins.css" />
     <link rel="stylesheet" href="~/lib/luckysheet/css/luckysheet.css" />
@@ -131,8 +136,10 @@
 
 @section Scripts {
     <script src="~/lib/vue/vue.js"></script>
+    <script src="~/lib/jquery/jquery.js"></script>
     <script src="~/lib/luckysheet/plugins/js/plugin.js"></script>
     <script src="~/lib/luckysheet/luckysheet.umd.js"></script>
+    <script src="~/lib/luckyexcel/bundle.js"></script>
     <script src="~/lib/dragula/dragula.js"></script>
 
     <script>
@@ -176,6 +183,18 @@
     </script>
 
     <script>
+        window.onload = () => {
+            let upload = document.getElementById("Luckyexcel-demo-file");
+            upload.addEventListener("change", function (evt) {
+                var files = evt.target.files;
+                LuckyExcel.transformExcelToLucky(files[0], function (exportJson) {
+                    console.log(exportJson);
+                });
+            });
+        }
+    </script>
+
+    <script>
         var app = new Vue({
             el: '#app',
             data: {
@@ -215,19 +234,22 @@
                 this.initDragula();
             },
             methods: {
+                cloneObj(obj) {
+                    return JSON.parse(JSON.stringify(obj));
+                },
                 initLuckysheet(tab = 'form') {
                     let options = {
                         container: (tab == 'form' ? this.lsFormEl : this.lsCellDataEl), //luckysheet is the container id
                         lang: 'en',
                         showinfobar: false, // Whether to display the top name bar
                         showsheetbar: false, // Whether to display the bottom table name area
-                        showtoolbar: true, // Whether to display the toolbar in the second row
-                        showformulabar: true, // me custom
+                        showtoolbar: (tab == 'form'), // Whether to display the toolbar in the second row
+                        showformulabar: (tab == 'form'), // me custom
                         showstatisticBar: false, // Whether to display the bottom count bar
                         fullscreenmode: false, // Whether full-screen mode. In non-full-screen mode, the marker box is not forced to be selected
                         column: this.lsColumn, // The default number of columns in an empty table
                         row: this.lsRow, // The default number of rows in an empty table
-                        data: this.data,
+                        data: this.cloneObj(this.data),
                         allowEdit: (tab == 'form'),
                         onCellClick: this.onCellClick,
                         onCellMouseOver: this.onCellMouseOver,
@@ -274,8 +296,10 @@
                 },
                 rerender(tab) {
                     this.currentTab = tab;
-                    //if (this.lsRef)
-                    //    console.log(this.lsRef.getAllSheets());
+                    let sheetIndex = 0;
+                    if (this.lsRef) {
+                        this.data[sheetIndex].celldata = this.cloneObj(this.lsRef.getGridData(this.lsRef.flowdata())); 
+                    }
                     this.initLuckysheet(this.currentTab);
                 },
                 onCellClick(row, col, data) {
@@ -302,6 +326,49 @@
                     //console.log('onSheetMouseOut');
                     this.mouseOnCoords = null;
                 },
+                doShowImport() {
+                    $('#importFile').attr("accept", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                    $('#importFile').trigger('click');
+                },
+                doImport($event) {
+                    const self = this;
+                    if ($event.target.files.length) {
+                        let accept = 'xlsx';
+
+                        for (const file of $event.target.files) {
+                            const name = file.name;
+                            const extension = name.substring(name.lastIndexOf('.') + 1)
+
+                            if (accept.includes(extension.toLowerCase())) {
+
+                                self.transformExcelToLucky(file, function (exportJson) {
+                                    console.log(exportJson);
+                                    self.data = exportJson.sheets;
+                                    self.initLuckysheet();
+                                });
+                            } else {
+                                console.error('ไม่รองรับไฟล์ (ext)'.replace('(ext)', extension));
+                            }
+                        }
+                        var newFileList = Array.from($event.target.files);
+                        newFileList.splice(0, $event.target.files.length);
+                        $('#importFile').val('');
+                    }
+                },
+                transformExcelToLucky(excelFile, callBack) {
+                    let handleZip = new HandleZip(excelFile);
+                    handleZip.unzipFile(function (files) {
+                        let luckyFile = new LuckyFile(files, excelFile.name);
+                        let luckysheetfile = luckyFile.Parse();
+                        let exportJson = JSON.parse(luckysheetfile);
+                        if (typeof callBack !== "undefined") {
+                            callBack(exportJson, luckysheetfile);
+                        }
+                    },
+                    function (err) {
+                        console.error(err);
+                    });
+                }
             }
         });
     </script>

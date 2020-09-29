@@ -8,9 +8,21 @@
 
   <ItemGroup>
     <Compile Remove="my\**" />
+    <Compile Remove="wwwroot\lib\luckyexcel\assets\**" />
+    <Compile Remove="wwwroot\lib\luckyexcel\dist\**" />
+    <Compile Remove="wwwroot\lib\luckyexcel\src\**" />
     <Content Remove="my\**" />
+    <Content Remove="wwwroot\lib\luckyexcel\assets\**" />
+    <Content Remove="wwwroot\lib\luckyexcel\dist\**" />
+    <Content Remove="wwwroot\lib\luckyexcel\src\**" />
     <EmbeddedResource Remove="my\**" />
+    <EmbeddedResource Remove="wwwroot\lib\luckyexcel\assets\**" />
+    <EmbeddedResource Remove="wwwroot\lib\luckyexcel\dist\**" />
+    <EmbeddedResource Remove="wwwroot\lib\luckyexcel\src\**" />
     <None Remove="my\**" />
+    <None Remove="wwwroot\lib\luckyexcel\assets\**" />
+    <None Remove="wwwroot\lib\luckyexcel\dist\**" />
+    <None Remove="wwwroot\lib\luckyexcel\src\**" />
   </ItemGroup>
 
   <ItemGroup>
