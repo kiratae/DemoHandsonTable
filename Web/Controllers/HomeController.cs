@@ -20,6 +20,7 @@ namespace Web
 
         public IActionResult Index()
         {
+            return RedirectToAction("Index2");
             return View();
         }
 

@@ -4,6 +4,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <CopyRefAssembliesToPublishDirectory>false</CopyRefAssembliesToPublishDirectory>
     <UserSecretsId>47d06dc4-5806-465f-9538-cffa55ab5e55</UserSecretsId>
+    <Deterministic>False</Deterministic>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +27,24 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\lib\luckyexcel\common\constant.js" />
+    <None Include="wwwroot\lib\luckyexcel\common\method.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\ILuck.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\LuckyBase.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\LuckyBorder.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\LuckyCell.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\LuckyChart.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\LuckyComment.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\LuckyCondition.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\LuckyFile.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\luckyFilter.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\luckyFormula.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\luckyFreezen.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\luckyPivotTables.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\LuckySheet.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\LuckySparkLine.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\LuckyTable.js" />
+    <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\ReadXml.js" />
     <None Include="wwwroot\lib\luckysheet\assets\iconfont\iconfont.js" />
     <None Include="wwwroot\lib\luckysheet\assets\iconfont\iconfont.svg" />
     <None Include="wwwroot\lib\luckysheet\assets\iconfont\iconfont.woff2" />

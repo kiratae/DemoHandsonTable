@@ -1,145 +1,33 @@
 ﻿@{
-    ViewData["Title"] = "luckysheet";
+    ViewData["Title"] = "Luckysheet";
 }
 
-<div id="app">
-    <h1 class="mt-3">Luckysheet</h1>
-
-    <hr />
-
-    <div class="my-3">
-        <input type="file" id="Luckyexcel-demo-file" name="Luckyexcel-demo-file" change="demoHandler" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-    </div>
-
-    <div class="row">
-        <div class="col-10" v-bind:class="currentTab == 'form' ? 'col-12' : 'col-10'">
-            <ul class="nav nav-tabs" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active" id="form-tab" data-toggle="tab" href="#form" role="tab" aria-controls="form" aria-selected="true" v-on:click="rerender('form')">จัดการแบบฟอร์ม</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="cell-data-tab" data-toggle="tab" href="#cell-data" role="tab" aria-controls="cell-data" aria-selected="false" v-on:click="rerender('cell-data')">จัดการข้อมูลตาราง</a>
-                </li>
-            </ul>
-            <div class="tab-content">
-                <div class="tab-pane active" id="form" role="tabpanel" aria-labelledby="form-tab">
-                    <div class="card">
-                        <div class="card-body p-2">
-
-                            <div id="lsForm" style="width:100%;height:520px;overflow: hidden;"></div>
-
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane" id="cell-data" role="tabpanel" aria-labelledby="cell-data-tab">
-                    <div class="card">
-                        <div class="card-body p-2">
-
-                            <div id="lsCellData" style="width:100%;height:520px;overflow: hidden;"></div>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="pl-0" v-bind:class="currentTab == 'cell-data' ? 'col-2' : 'd-none'">
-            <div class="card h-100">
-                <div class="card-header">
-                    <span class="card-title">จัดการสูตรคำนวน</span>
-                </div>
-                <div class="card-body p-2">
-                    <div class="list-group" id="variables">
-                        <div class="list-group-item px-2 py-1" v-for="item in form.variables" :data-variable-id="item.variableId">
-                            <button class="btn p-0 handle mr-1 fa fa-arrows-alt text-black-50" type="button"></button>
-                            <span>{{ item.text }} </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal -->
-    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>ชื่อตัวแปร</label>
-                        <input type="text" v-model="varibleModal.text" class="form-control" />
-                    </div>
-                    <div class="form-group">
-                        <label>ประเภทข้อมูล</label>
-                        <select class="form-control" v-model="varibleModal.dataType">
-                            <option :value="dataType.value" v-for="dataType in mdDataTypes">{{ dataType.text }}</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>เลือกเซลแสดงผล</label>
-                        <div class="form-control">
-                            <span v-for="crood in varibleModal.coords" class="badge badge-secondary mx-1">{{ crood.cell }}</span>
-                        </div>
-                    </div>
-                    <hr />
-                    <div class="form-group">
-                        <label>ตรวจสอบข้อมูล</label>
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <select class="form-control">
-                                            <option value="value">text</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-6">
-                                        <select class="form-control">
-                                            <option value="value">text</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12">
-                                <button class="btn"><i class="fa fa-plus-circle"></i>&ensp;เพิ่มข้อมูล</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>สูตรการคำนวน</label>
-                        <textarea v-model="varibleModal.formula" class="form-control"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" data-dismiss="modal" v-on:click="doSaveVariable(varibleModal.variableId)">Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>
-
 @section Head {
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.css" />
     <link rel="stylesheet" href="~/lib/luckysheet/plugins/css/pluginsCss.css" />
     <link rel="stylesheet" href="~/lib/luckysheet/plugins/plugins.css" />
     <link rel="stylesheet" href="~/lib/luckysheet/css/luckysheet.css" />
     <link rel="stylesheet" href="~/lib/luckysheet/assets/iconfont/iconfont.css" />
 }
 
+
+<div id="form-app">
+    <div class="card">
+        <div class="card-body">
+
+
+            <h1 class="mb-3">Luckysheet</h1>
+            <hr />
+
+            <div id="lsForm" style="width:100%;height: 520px;overflow: hidden;"></div>
+        </div>
+
+    </div>
+</div>
+
 @section Scripts {
     <script src="~/lib/vue/vue.js"></script>
-    <script src="~/lib/jquery/jquery.js"></script>
     <script src="~/lib/luckysheet/plugins/js/plugin.js"></script>
     <script src="~/lib/luckysheet/luckysheet.umd.js"></script>
-    <script src="~/lib/luckyexcel/bundle.js"></script>
     <script src="~/lib/dragula/dragula.js"></script>
 
     <script>
@@ -182,21 +70,22 @@
         };
     </script>
 
-    <script>
-        window.onload = () => {
-            let upload = document.getElementById("Luckyexcel-demo-file");
-            upload.addEventListener("change", function (evt) {
-                var files = evt.target.files;
-                LuckyExcel.transformExcelToLucky(files[0], function (exportJson) {
-                    console.log(exportJson);
+    @*<script type="module">
+            import { LuckyExcel } from '@Url.Content("~/lib/luckyexcel/luckyexcel.js")';
+            window.onload = () => {
+                let upload = document.getElementById("Luckyexcel-demo-file");
+                upload.addEventListener("change", function (evt) {
+                    var files = evt.target.files;
+                    LuckyExcel.transformExcelToLucky(files[0], function (exportJson) {
+                        console.log(exportJson);
+                    });
                 });
-            });
-        }
-    </script>
+            }
+        </script>*@
 
     <script>
         var app = new Vue({
-            el: '#app',
+            el: '#form-app',
             data: {
                 dragEl: null,
                 lsRef: null,
@@ -234,27 +123,56 @@
                 this.initDragula();
             },
             methods: {
-                cloneObj(obj) {
-                    return JSON.parse(JSON.stringify(obj));
-                },
                 initLuckysheet(tab = 'form') {
                     let options = {
                         container: (tab == 'form' ? this.lsFormEl : this.lsCellDataEl), //luckysheet is the container id
                         lang: 'en',
                         showinfobar: false, // Whether to display the top name bar
                         showsheetbar: false, // Whether to display the bottom table name area
-                        showtoolbar: (tab == 'form'), // Whether to display the toolbar in the second row
-                        showformulabar: (tab == 'form'), // me custom
+                        showtoolbar: true, // Whether to display the toolbar in the second row
+                        showformulabar: false, // me custom
                         showstatisticBar: false, // Whether to display the bottom count bar
                         fullscreenmode: false, // Whether full-screen mode. In non-full-screen mode, the marker box is not forced to be selected
                         column: this.lsColumn, // The default number of columns in an empty table
                         row: this.lsRow, // The default number of rows in an empty table
-                        data: this.cloneObj(this.data),
+                        data: this.data,
                         allowEdit: (tab == 'form'),
                         onCellClick: this.onCellClick,
                         onCellMouseOver: this.onCellMouseOver,
                         onCellMouseOut: this.onCellMouseOut,
-                        onSheetMouseOut: this.onSheetMouseOut
+                        onSheetMouseOut: this.onSheetMouseOut,
+                        toolbars: [
+                            'undo',
+                            'redo',
+                            'paintformat',
+                            '----------',
+                            'font-size',
+                            '----------',
+                            'bold',
+                            'italic',
+                            'strikethrough',
+                            'text-color',
+                            '----------',
+                            'cell-color',
+                            'border',
+                            'merge',
+                            '----------',
+                            'align',
+                            'valign',
+                            'textwrap',
+                            'rotation',
+                            '----------',
+                            'function',
+                        ],
+                        contextMenus: [
+                            'copy',
+                            //'copy-as',
+                            'paste',
+                            'handle=insert|delete|delete-cell',
+                            'insert=above&left|below&right|delete-selected|height&width',
+                            'ordering=asc|desc',
+                            'data=clear',
+                        ],
                     }
                     console.log('initLuckysheet', tab, options);
                     if (this.lsRef != null)
@@ -276,7 +194,6 @@
                         .on('cancel', function (el) {
                             console.log('cancel', el);
                             let text = '!' + $(el).text().trim();
-
                             if (self.mouseOnCoords && self.lsRef) {
                                 let obj = {
                                     m: text,
@@ -285,8 +202,8 @@
                                     iv: true, // iv stand for isVariable
                                     //un: 1, // underline
                                     ht: 0, // 0 center, 1 left, 2 right
-                                    fc: "#0000ff",
-                                    ff: 1
+                                    fc: "#1ea67d",
+                                    ff: 0
                                 };
                                 self.lsRef.setcellvalue(self.mouseOnCoords.row, self.mouseOnCoords.col, self.lsRef.flowdata(), obj);
                                 self.lsRef.jfrefreshgrid();
@@ -296,16 +213,19 @@
                 },
                 rerender(tab) {
                     this.currentTab = tab;
-                    let sheetIndex = 0;
-                    if (this.lsRef) {
-                        this.data[sheetIndex].celldata = this.cloneObj(this.lsRef.getGridData(this.lsRef.flowdata())); 
-                    }
+                    //if (this.lsRef)
+                    //    console.log(this.lsRef.getAllSheets());
                     this.initLuckysheet(this.currentTab);
                 },
                 onCellClick(row, col, data) {
                     //console.log('onCellClick', row, col, data);
                     if (data && data.iv) {
+                        if (data.un) {
+                            delete data.un;
+                            this.lsRef.jfrefreshgrid();
+                        }
                         console.log('isVariable', data);
+                        $('#exampleModal').modal('show');
                     }
                 },
                 onCellMouseOver(row, col, data) {
@@ -317,58 +237,27 @@
                     } else {
                         this.mouseOnCoords = null;
                     }
+                    if (data && data.iv) {
+                        data.un = 1;
+                        $('#luckysheet-cell-main .luckysheet-cell-sheettable').css('cursor', 'pointer');
+                        this.lsRef.jfrefreshgrid();
+                    }
+                    else {
+                        $('#luckysheet-cell-main .luckysheet-cell-sheettable').css('cursor', 'default');
+                    }
                 },
                 onCellMouseOut(row, col, data) {
                     //console.log('onCellMouseOut', row, col, data);
                     this.mouseOnCoords = null;
+                    if (data && data.iv && data.un) {
+                        delete data.un;
+                        this.lsRef.jfrefreshgrid();
+                    }
                 },
                 onSheetMouseOut() {
                     //console.log('onSheetMouseOut');
                     this.mouseOnCoords = null;
                 },
-                doShowImport() {
-                    $('#importFile').attr("accept", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-                    $('#importFile').trigger('click');
-                },
-                doImport($event) {
-                    const self = this;
-                    if ($event.target.files.length) {
-                        let accept = 'xlsx';
-
-                        for (const file of $event.target.files) {
-                            const name = file.name;
-                            const extension = name.substring(name.lastIndexOf('.') + 1)
-
-                            if (accept.includes(extension.toLowerCase())) {
-
-                                self.transformExcelToLucky(file, function (exportJson) {
-                                    console.log(exportJson);
-                                    self.data = exportJson.sheets;
-                                    self.initLuckysheet();
-                                });
-                            } else {
-                                console.error('ไม่รองรับไฟล์ (ext)'.replace('(ext)', extension));
-                            }
-                        }
-                        var newFileList = Array.from($event.target.files);
-                        newFileList.splice(0, $event.target.files.length);
-                        $('#importFile').val('');
-                    }
-                },
-                transformExcelToLucky(excelFile, callBack) {
-                    let handleZip = new HandleZip(excelFile);
-                    handleZip.unzipFile(function (files) {
-                        let luckyFile = new LuckyFile(files, excelFile.name);
-                        let luckysheetfile = luckyFile.Parse();
-                        let exportJson = JSON.parse(luckysheetfile);
-                        if (typeof callBack !== "undefined") {
-                            callBack(exportJson, luckysheetfile);
-                        }
-                    },
-                    function (err) {
-                        console.error(err);
-                    });
-                }
             }
         });
     </script>
