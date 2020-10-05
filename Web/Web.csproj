@@ -27,6 +27,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Scripts\app.ts" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="wwwroot\lib\luckyexcel\common\constant.js" />
     <None Include="wwwroot\lib\luckyexcel\common\method.js" />
     <None Include="wwwroot\lib\luckyexcel\ToLuckySheet\ILuck.js" />
@@ -69,6 +73,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="3.1.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TypeScriptCompile Include="Scripts\app.ts" />
   </ItemGroup>
 
 </Project>

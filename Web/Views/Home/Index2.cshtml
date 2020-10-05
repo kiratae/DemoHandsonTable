@@ -9,11 +9,11 @@
     <link rel="stylesheet" href="~/lib/luckysheet/assets/iconfont/iconfont.css" />
 }
 
-
 <div id="form-app">
     <div class="card">
         <div class="card-body">
 
+            <p style="text-align:center;"> <input style="font-size:16px;" type="file" id="Luckyexcel-demo-file" name="Luckyexcel-demo-file" change="demoHandler" /></p>
 
             <h1 class="mb-3">Luckysheet</h1>
             <hr />
@@ -29,6 +29,8 @@
     <script src="~/lib/luckysheet/plugins/js/plugin.js"></script>
     <script src="~/lib/luckysheet/luckysheet.umd.js"></script>
     <script src="~/lib/dragula/dragula.js"></script>
+
+    @*<script src="~/scripts/app.js"></script>*@
 
     <script>
         var __MOCK_FORM = {
@@ -70,18 +72,18 @@
         };
     </script>
 
-    @*<script type="module">
-            import { LuckyExcel } from '@Url.Content("~/lib/luckyexcel/luckyexcel.js")';
-            window.onload = () => {
-                let upload = document.getElementById("Luckyexcel-demo-file");
-                upload.addEventListener("change", function (evt) {
-                    var files = evt.target.files;
-                    LuckyExcel.transformExcelToLucky(files[0], function (exportJson) {
-                        console.log(exportJson);
-                    });
+    <script type="module">
+        var LuckyExcel = require('@Url.Content("~/scripts/app.js")');
+        window.onload = () => {
+            let upload = document.getElementById("Luckyexcel-demo-file");
+            upload.addEventListener("change", function (evt) {
+                var files = evt.target.files;
+                LuckyExcel.transformExcelToLucky(files[0], function (exportJson) {
+                    console.log(exportJson);
                 });
-            }
-        </script>*@
+            });
+        }
+    </script>
 
     <script>
         var app = new Vue({
