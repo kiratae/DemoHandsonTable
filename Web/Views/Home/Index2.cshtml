@@ -13,7 +13,7 @@
     <div class="card">
         <div class="card-body">
 
-            <p style="text-align:center;"> <input style="font-size:16px;" type="file" id="Luckyexcel-demo-file" name="Luckyexcel-demo-file" change="demoHandler" /></p>
+            @*<p style="text-align:center;"> <input style="font-size:16px;" type="file" id="Luckyexcel-demo-file" name="Luckyexcel-demo-file" change="demoHandler" /></p>*@
 
             <h1 class="mb-3">Luckysheet</h1>
             <hr />
@@ -72,7 +72,7 @@
         };
     </script>
 
-    <script type="module">
+    @*<script type="module">
         var LuckyExcel = require('@Url.Content("~/scripts/app.js")');
         window.onload = () => {
             let upload = document.getElementById("Luckyexcel-demo-file");
@@ -83,7 +83,7 @@
                 });
             });
         }
-    </script>
+    </script>*@
 
     <script>
         var app = new Vue({
@@ -132,7 +132,7 @@
                         showinfobar: false, // Whether to display the top name bar
                         showsheetbar: false, // Whether to display the bottom table name area
                         showtoolbar: true, // Whether to display the toolbar in the second row
-                        showformulabar: false, // me custom
+                        showformulabar: true, // me custom
                         showstatisticBar: false, // Whether to display the bottom count bar
                         fullscreenmode: false, // Whether full-screen mode. In non-full-screen mode, the marker box is not forced to be selected
                         column: this.lsColumn, // The default number of columns in an empty table
